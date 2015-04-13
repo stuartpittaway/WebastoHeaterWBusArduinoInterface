@@ -48,7 +48,7 @@
 //#define HOUR2WORD(w, h)	  SWAP(&w, h)
 //#define BYTE2GPR_TEXT(t, b)  byteToMili(t, b)
 //#define WATT2WORD(w, W)    SWAP(&w, W)
-//#define WORD2WATT(w)       twobyte2word(w)
+
 //#define OHM2WORD(w, o)     SWAP(&w, o)
 //#define RPM2WORD(w, r)     SWAP(&w, r)
 //#define WORD2RPM(w)        twobyte2word(w)
@@ -67,7 +67,7 @@ wbus::~wbus()
 
 
 void wbus::wbus_init() {
-_MySerial.end();
+  _MySerial.end();
   //Break set
 
 #if defined(__AVR_ATmega328P__)
@@ -81,29 +81,29 @@ _MySerial.end();
 #endif
 
 
-//#if defined(__AVR_ATmega2560__)
-//  //This code is for Arduino ATMEGA2560 with hardware serial port 3 connected to WBUS, PORTJ is pin 14 and 15
-//  //Signal is inverted by WBUS interface
-//  
-//  pinMode(_TXpin,OUTPUT);
-//  digitalWrite(_TXpin,HIGH);
-//  delay(250); 
-//  digitalWrite(_TXpin,LOW);
-//  delay(25);
-//  digitalWrite(_TXpin,HIGH);
-//  delay(25); 
-//#endif
+  //#if defined(__AVR_ATmega2560__)
+  //  //This code is for Arduino ATMEGA2560 with hardware serial port 3 connected to WBUS, PORTJ is pin 14 and 15
+  //  //Signal is inverted by WBUS interface
+  //
+  //  pinMode(_TXpin,OUTPUT);
+  //  digitalWrite(_TXpin,HIGH);
+  //  delay(250);
+  //  digitalWrite(_TXpin,LOW);
+  //  delay(25);
+  //  digitalWrite(_TXpin,HIGH);
+  //  delay(25);
+  //#endif
 
 
   // initialize serial communication at 2400 bits per second, 8 bit data, even parity and 1 stop bit
   _MySerial.begin(2400, SERIAL_8E1);
-  
+
   //250ms for timeouts
-  _MySerial.setTimeout(250); 
+  _MySerial.setTimeout(250);
 
   // Empty all queues. BRK toggling may cause a false received byte (or more than one who knows).
   while (_MySerial.available()) _MySerial.read();
-  
+
 }
 
 
@@ -119,18 +119,6 @@ unsigned char wbus::checksum(unsigned char *buf, unsigned char len, unsigned cha
   }
   return chk;
 }
-
-
-//char* wbus::getVersion(char *str, unsigned char *d)
-//{
-//  static const char *_wd[6] = {   "StrangeDay", "Mon ", "Tue ", "Wed ", "Thu ", "Fri " };
-//
-//  strcpy(str, _wd[d[0]]);
-//  str += strlen(str);
-//  str += sprintf(str, "%x/%x  %x.%x", d[1], d[2], d[3], d[4]);
-//
-//  return str;
-//}
 
 
 /**
@@ -150,7 +138,7 @@ int wbus::wbus_msg_send( uint8_t addr,
                          uint8_t *data2,
                          int len2)
 {
- 
+
   uint8_t bytes, chksum;
   uint8_t buf[3];
 
@@ -242,7 +230,7 @@ int wbus::wbus_msg_recv(
     if (_MySerial.readBytes((char*)buf, 1) != 1) {
 
       //if (*cmd != 0) {
-        //PRINTF("wbus_msg_recv(): timeout\n");
+      //PRINTF("wbus_msg_recv(): timeout\n");
       //}
       return -1;
     }
@@ -257,9 +245,9 @@ int wbus::wbus_msg_recv(
 
   /* Read length and command */
   if (_MySerial.readBytes((char*)buf + 1, 2) != 2) {
-//    if (*cmd != 0) {
-//     //wbus_msg_recv(): No addr/len error
-//    }
+    //    if (*cmd != 0) {
+    //     //wbus_msg_recv(): No addr/len error
+    //    }
 
     return -1;
   }
@@ -361,7 +349,7 @@ int wbus::wbus_io( uint8_t cmd,
 
   //Appears that there is a small 70ms delay on the real Thermotest software between requests, see if mimick this here helps...
   delay(30);
-  
+
   return err;
 }
 
@@ -374,7 +362,7 @@ int wbus::wbus_get_fault_count(unsigned char ErrorList[32]) {
   len = 1;
   err = wbus_io(WBUS_CMD_ERR, tmp, NULL, 0, ErrorList, &len, 1);
   //if (err) goto bail;
-//bail:
+  //bail:
   return err;
 }
 
@@ -383,12 +371,12 @@ int wbus::wbus_clear_faults() {
   unsigned char tmp;
 
   tmp = ERR_DEL; len = 1; err = wbus_io(WBUS_CMD_ERR, &tmp, NULL, 0, &tmp, &len, 0);
-	 
-  return err;  
+
+  return err;
 }
 
 int wbus::wbus_get_fault(unsigned char ErrorNumber, HANDLE_ERRINFO errorInfo) {
-   int err, len;
+  int err, len;
 
   unsigned char tmp[2];
 
@@ -396,63 +384,60 @@ int wbus::wbus_get_fault(unsigned char ErrorNumber, HANDLE_ERRINFO errorInfo) {
   tmp[0] = ERR_READ;
   tmp[1] = ErrorNumber;
   err = wbus_io(WBUS_CMD_ERR, tmp, NULL, 0, (unsigned char*)errorInfo, &len, 1);
-  
+
   if (err) goto bail;
-  
+
 bail:
   return err;
 }
 
-/* Overall info */
-int wbus::wbus_get_wbinfo(HANDLE_WBINFO i)
+int wbus::wbus_get_version_wbinfo(HANDLE_VERSION_WBINFO i)
 {
   int err, len;
   unsigned char tmp, tmp2[2];
 
-  //wbus_init();
-
   tmp = IDENT_WB_VER; len = 1; err = wbus_io(WBUS_CMD_IDENT, &tmp, NULL, 0, &i->wbus_ver, &len, 1);
   if (err) goto bail;
 
-  tmp = IDENT_DEV_NAME; len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, (unsigned char*)i->dev_name, &len, 1);
-  if (err) goto bail;
-  i->dev_name[len] = 0; // Hack: Null terminate this string 
-
-/*  
-#if 0
-  tmp = 3;              len = 1; err = wbus_io( WBUS_CMD_SL_RD, &tmp, NULL, 0, i->strange2, &len, 1);
-#else
-  tmp2[0] = 3; tmp2[1] = 7; len = 2; err = wbus_io( WBUS_CMD_SL_RD, tmp2, NULL, 0, i->strange2, &len, 2);
-#endif
-*/
   tmp = IDENT_WB_CODE;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->wbus_code, &len, 1);
   if (err) goto bail;
 
-//  len = 0; err = wbus_io( WBUS_CMD_U1,  NULL, NULL, 0, i->strange, &len, 0);
-//  if (err) goto bail;
-
-  tmp = IDENT_DEV_ID;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->dev_id, &len, 1);
-  if (err) goto bail;
   tmp = IDENT_HWSW_VER; len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->hw_ver, &len, 1);
   if (err) goto bail;
+
   tmp = IDENT_DATA_SET; len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->data_set_id, &len, 1);
   if (err) goto bail;
-  tmp = IDENT_DOM_CU;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->dom_cu, &len, 1);
-  if (err) goto bail;
-  tmp = IDENT_DOM_HT;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->dom_ht, &len, 1);
-  if (err) goto bail;
-  //tmp = IDENT_U0;      len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->u0, &len, 1);
-  //if (err) goto bail;
-  tmp = IDENT_CUSTID;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->customer_id, &len, 1);
-  if (err) goto bail;
-  tmp = IDENT_SERIAL;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->serial, &len, 1);
-  if (err) goto bail;
+
   tmp = IDENT_SW_ID;   len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->sw_id, &len, 1);
 
 bail:
   return err;
 }
 
+
+/* Overall info */
+int wbus::wbus_get_basic_info(HANDLE_BASIC_WBINFO i)
+{
+  int err, len;
+  unsigned char tmp, tmp2[2];
+
+  tmp = IDENT_DEV_NAME; len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, (unsigned char*)i->dev_name, &len, 1);
+  if (err) goto bail;
+  i->dev_name[len] = 0; // Hack: Null terminate this string
+  tmp = IDENT_DEV_ID;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->dev_id, &len, 1);
+  if (err) goto bail;
+  tmp = IDENT_DOM_CU;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->dom_cu, &len, 1);
+  if (err) goto bail;
+  tmp = IDENT_DOM_HT;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->dom_ht, &len, 1);
+  if (err) goto bail;
+  tmp = IDENT_CUSTID;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->customer_id, &len, 1);
+  if (err) goto bail;
+  tmp = IDENT_SERIAL;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->serial, &len, 1);
+  if (err) goto bail;
+
+bail:
+  return err;
+}
 
 /* Sensor access */
 int wbus::wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx)
@@ -478,25 +463,24 @@ int wbus::wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx)
       break;
   }
 
-  //wbus_init();
-
   sen = idx; len = 1;
   err = wbus_io(WBUS_CMD_QUERY, &sen, NULL, 0, sensor->value, &len, 1);
   if (err != 0)
   {
     //PRINTF("Reading sensor %d failed\n", );
-    //(F("Read sensor fail")); _DebugSerial.println(idx);
     sensor->length = 0;
-    return -1;
+
+  } else {
+
+    /* Store length of received value */
+    sensor->length = len;
+    sensor->idx = idx;
   }
 
-  /* Store length of received value */
-  sensor->length = len;
-  sensor->idx = idx;
   return err;
 }
 
-#define BOOL(x) (((x)!=0)?1:0)
+//#define BOOL(x) (((x)!=0)?1:0)
 
 /*
 void wbus::wbus_sensor_print(char *str, HANDLE_WBSENSOR s)
@@ -540,10 +524,10 @@ void wbus::wbus_sensor_print(char *str, HANDLE_WBSENSOR s)
       str += sprintf(str, "OP state: 0x%x, N: %d, Dev state: 0x%x", s->value[0], s->value[1], s->value[2]);
       break;
     case QUERY_DURATIONS0:
-      
+
          //PH=parking heating, SH= supplemental heatig.
          //format: hours:minutes, 1..33%,34..66%,67..100%,>100%
-       
+
       str += sprintf(str, "Burning duration PH %u:%u %u:%u %u:%u %u:%u SH %u:%u %u:%u %u:%u %u:%u",
                      WORD2HOUR(s->value), s->value[2], WORD2HOUR(s->value + 3), s->value[5], WORD2HOUR(s->value + 6), s->value[8],
                      WORD2HOUR(s->value + 9), s->value[11],
@@ -559,7 +543,7 @@ void wbus::wbus_sensor_print(char *str, HANDLE_WBSENSOR s)
                      twobyte2word(s->value), twobyte2word(s->value + 2), twobyte2word(s->value + 4));
       break;
     case QUERY_STATUS2:
-      // Level in percent. Too bad the % sign cant be printed reasonably on an 14 segment LCD. 
+      // Level in percent. Too bad the % sign cant be printed reasonably on an 14 segment LCD.
       str += sprintf(str, "Level GP:%d FP:%d Hz CF:%d %02x CP: %02x",
                      s->value[0] >> 1, s->value[1] / 20, s->value[2] >> 1,
                      s->value[3], s->value[4] >> 1);
