@@ -98,8 +98,8 @@ _MySerial.end();
   // initialize serial communication at 2400 bits per second, 8 bit data, even parity and 1 stop bit
   _MySerial.begin(2400, SERIAL_8E1);
   
-  //300ms for timeouts
-  _MySerial.setTimeout(1000); 
+  //250ms for timeouts
+  _MySerial.setTimeout(250); 
 
   // Empty all queues. BRK toggling may cause a false received byte (or more than one who knows).
   while (_MySerial.available()) _MySerial.read();
