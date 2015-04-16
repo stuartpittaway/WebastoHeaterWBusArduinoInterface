@@ -14,11 +14,11 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-   
-   
+
+
    Original idea and work by Manuel Jander  mjander@users.sourceforge.net
    https://sourceforge.net/projects/libwbus/
-   
+
 */
 
 #include <Arduino.h>
@@ -59,14 +59,16 @@ U8GLIB_KS0108_192 u8g(
   //rw
   16 ); 		// en=18 (A4), cs1=14 (a0) , cs2= (a1),di=17 (a3),rw=16 (a2), cs3= 19 (a5)
 
-
+/* Global static variables */
 wbus wbusObject(Serial);
 
-//Massive buffer for text/string output
+//Massive buffer for scrolling text/string output
 char value[200];
 
 //buffer for text output of date/time
-char menuheader[25];
+char menuheader_date[13];
+char menuheader_clock[6];
+
 //buffer for text output of status
 char menufooter[25];
 
@@ -78,35 +80,49 @@ unsigned char ErrorList[32];
 
 unsigned long previousMillis;
 unsigned long currentMillis;
+
 wb_sensor_t KeepAlive_wb_sensors;
 bool updatedisplay;
 
 /* DISPLAY FOR INFO PAGES */
-M2_INFO(el_labelptr, "w178l4f0" , &first_visible_line1, &total_lines1, value, fn_information_close);
+M2_INFO(el_labelptr, "w178l5f0" , &first_visible_line1, &total_lines1, value, fn_information_close);
 //M2_SPACE(el_space, "w1h1");
-M2_VSB(el_strlist_vsb, "w4l4" , &first_visible_line1, &total_lines1);
+M2_VSB(el_strlist_vsb, "w4l5" , &first_visible_line1, &total_lines1);
 M2_LIST(list_strlist) = { &el_labelptr, &el_strlist_vsb };
 M2_HLIST(el_strlist_hlist, NULL, list_strlist);
 M2_ALIGN(el_infopages_root, "-1|1W192H64", &el_strlist_hlist);
 
 /* FAULT DISPLAY*/
-M2_INFO(el_labelptr2, "w178l4f0" , &first_visible_line1, &total_lines1, value, fn_shownextfault);
+M2_INFO(el_labelptr2, "w178l5f0" , &first_visible_line1, &total_lines1, value, fn_shownextfault);
 M2_LIST(list_strlist2) = { &el_labelptr2, &el_strlist_vsb };
 M2_HLIST(el_strlist_hlist2, NULL, list_strlist2);
 M2_ALIGN(top_nextfaulttopelement, "-1|1W192H64", &el_strlist_hlist2);
 
 /* MAIN MENU */
-M2_LABELFN(el_clock_label, NULL, label_clock);
+//M2_LABELFN(el_clock_label, NULL, label_clock);
+//M2_LABELFN(el_date_label, NULL, label_date);
 M2_LABELFN(el_footer_label, NULL, label_footer);
 
 M2_BUTTON(el_button_information_basic, "", "Heater info", fn_information_basic);
 M2_BUTTON(el_button_information_versions, "", "Version info", fn_information_versions);
 M2_BUTTON(el_button_faults, "", "Show faults", fn_faults);
 M2_BUTTON(el_button_clear_faults, "", "Clear faults", fn_clear_faults);
-M2_SPACE(el_menu_space, "w1h4");
-M2_LIST(list_buttonlist) = { &el_clock_label, &el_menu_space, &el_button_information_basic, &el_button_information_versions, &el_button_faults, &el_button_clear_faults, &el_menu_space, &el_footer_label };
+M2_SPACE(el_menu_space, "w1h2");
+
+//M2_LIST(list_headerbarlist) = { &el_clock_label, &el_date_label};
+//M2_HLIST(el_headerbarlist, NULL, list_headerbarlist);
+//M2_LIST(list_buttonlist) = { &el_headerbarlist, &el_menu_space, &el_button_information_basic, &el_button_information_versions, &el_button_faults, &el_button_clear_faults, &el_menu_space, &el_footer_label };
+M2_LIST(list_buttonlist) = { &el_button_information_basic, &el_button_information_versions, &el_button_faults, &el_button_clear_faults, &el_menu_space, &el_footer_label };
 M2_VLIST(el_buttonmenu, NULL, list_buttonlist);
 M2_ALIGN(top_buttonmenu, "-0|2W64H64", &el_buttonmenu);
+
+
+M2_LABELFN(el_big_label_clock, "f1x16y32", label_clock);
+M2_LABELFN(el_big_label_date, "x0y0", label_date);
+M2_BUTTON(el_button_clock_close, "x98y0", "Menu", fn_button_closeclock);
+M2_LIST(list_clocklist) = {&el_big_label_clock, &el_big_label_date, &el_button_clock_close };
+M2_XYLIST(el_bigclock, NULL, list_clocklist);
+//M2_ALIGN(el_bigclock, "-1|1W64H64", &el_bigclock_vlist);
 
 /*
     element: Root element of the menu.
@@ -132,6 +148,19 @@ M2_ALIGN(top_buttonmenu, "-0|2W64H64", &el_buttonmenu);
 //U8
 M2tk m2(&top_buttonmenu, m2_es_arduino , m2_eh_2bs, m2_gh_u8g_bf);
 
+
+const char *label_date(m2_rom_void_p element)
+{
+  return menuheader_date;
+}
+const char *label_clock(m2_rom_void_p element)
+{
+  return menuheader_clock;
+}
+const char *label_footer(m2_rom_void_p element)
+{
+  return menufooter;
+}
 
 char c2h(char c)
 {
@@ -160,11 +189,22 @@ char* hexdump(char *str, unsigned char *d, int l, bool appendNewLine)
   return str;
 }
 
+char *i2str_zeropad(int i, char *buf) {
+  if (i < 10) *buf++ = '0';
+
+  return i2str(i, buf);
+}
+
 char *i2str(int i, char *buf) {
   /* integer to string convert */
   byte l = 0;
 
   if (i < 0) *buf++ = '-';
+
+  if (i == 0) {
+    *buf++ = '0';
+    return buf;
+  }
 
   boolean leadingZ = true;
 
@@ -178,7 +218,6 @@ char *i2str(int i, char *buf) {
     i = mod;
   }
 
-  //buf[l]=0;
   return buf;
 }
 
@@ -204,9 +243,9 @@ void build_info_text_versions()
   //28320 code/1452 bytes ram
 
   char* v = value;
-  wb_info_t wb_info;
+  wb_version_info_t wb_info;
 
-  int err = wbusObject.wbus_get_wbinfo(&wb_info);
+  int err = wbusObject.wbus_get_version_wbinfo(&wb_info);
 
   if (!err) {
     unsigned char b;
@@ -216,11 +255,8 @@ void build_info_text_versions()
     strcat_P(v, label_WBUSVer); v += strlen_P(label_WBUSVer);
     b = (wb_info.wbus_ver >> 4) & 0x0f;
     v = i2str(b, v);
-    //v++;
-    //v=PrintHexByte(v,b);
     v++[0] = '.';
     b = (wb_info.wbus_ver & 0x0f);
-    //v=PrintHexByte(v,b);
     v = i2str(b, v);
 
     strcat_P(v, label_WBusCode); v += strlen_P(label_WBusCode);
@@ -256,9 +292,9 @@ void build_info_text_versions()
 void build_info_text_basic()
 {
   char* v = value;
-  wb_info_t wb_info;
+  wb_basic_info_t wb_info;
 
-  int err = wbusObject.wbus_get_wbinfo(&wb_info);
+  int err = wbusObject.wbus_get_basic_info(&wb_info);
   if (!err) {
     strcat_P(v, label_DeviceName); v += strlen_P(label_DeviceName);
     strcat(v, wb_info.dev_name); v += strlen(wb_info.dev_name);
@@ -308,7 +344,10 @@ void fn_information_basic(m2_el_fnarg_p fnarg) {
   build_info_text_basic();
   m2.setRoot(&el_infopages_root);
 }
-
+void fn_button_closeclock(m2_el_fnarg_p fnarg) {
+  //Close clock and show top menu
+  m2.setRoot(&top_buttonmenu);
+}
 void fn_information_close(m2_el_fnarg_p fnarg) {
   //Return to top home menu
   m2.setRoot(&top_buttonmenu);
@@ -391,9 +430,8 @@ void fn_faults(m2_el_fnarg_p fnarg) {
 void fn_clear_faults(m2_el_fnarg_p fnarg) {
   clearBuffer();
   char* v = value;
-  int err;
 
-  err = wbusObject.wbus_clear_faults();
+  int err = wbusObject.wbus_clear_faults();
 
   if (!err) {
 
@@ -411,9 +449,9 @@ void fn_clear_faults(m2_el_fnarg_p fnarg) {
 }
 
 void fn_shownextfault(m2_el_fnarg_p fnarg) {
-/* 
-This is called to build up the next fault information for display
-*/  
+  /*
+  This is called to build up the next fault information for display
+  */
   clearBuffer();
   char* v = value;
   int err;
@@ -485,9 +523,7 @@ char* PopulateTextForFault(uint8_t errIndex, char* v) {
     //04 00
     strcat_P(v, label_OperatingState); v += strlen_P(label_OperatingState);
     v = PrintHexByte(v, err_info.op_state[0]);
-    //v = i2str(err_info.op_state[0], v);
     v++[0] = '/';
-    //v = i2str(err_info.op_state[1], v);
     v = PrintHexByte(v, err_info.op_state[1]);
     v++[0] = '\n';
 
@@ -514,17 +550,6 @@ char* PopulateTextForFault(uint8_t errIndex, char* v) {
   return v;
 }
 
-/* box */
-// uint8_t active_encoding = 35;
-// uint8_t inactive_encoding = 33;
-/* circle */
-//uint8_t active_encoding = 73;
-//uint8_t inactive_encoding = 75;
-/* diamond */
-// uint8_t active_encoding = 72;
-// uint8_t inactive_encoding = 71;
-//uint8_t tsecond, tminute, thour, tdayOfWeek, tdayOfMonth, tmonth, tyear;
-
 
 unsigned long getTimeFunction() {
   tmElements_t tm;
@@ -537,32 +562,27 @@ unsigned long getTimeFunction() {
   else return now();
 }
 
-const char *label_clock(m2_rom_void_p element)
-{
-  return menuheader;
-}
-const char *label_footer(m2_rom_void_p element)
-{
-  return menufooter;
-}
 
 
 void updateClockString() {
-  memset(menuheader, 0, sizeof(menuheader));
-
-  char* v = menuheader;
-
   if (timeStatus() != timeNotSet) {
     tmElements_t tm;
     breakTime(now(), tm);
 
-    v = i2str( tm.Hour, v);
-    v++[0] = ':';
-    v = i2str( tm.Minute, v);
-    v++[0] = '.';
-    v = i2str( tm.Second, v);
-    v++[0] = ' ';
+    //Only update the clock if the seconds are less than 10, this reduces CPU load by not refreshing the screen all the time
+    memset(menuheader_clock, 0, sizeof(menuheader_clock));
+    memset(menuheader_date, 0, sizeof(menuheader_date));
 
+    char* v = menuheader_clock;
+    v = i2str_zeropad( tm.Hour, v);
+    v++[0] = ':';
+    v = i2str_zeropad( tm.Minute, v);
+    //v++[0] = '.';
+    //v = i2str( tm.Second, v);
+    v++[0] = 0;
+
+    /* Now the date */
+    v = menuheader_date;
     if (tm.Wday == 1) {
       strcat_P(v, label_Sun);
     } else {
@@ -570,15 +590,14 @@ void updateClockString() {
     }
     v += 4;
 
-    v = i2str( tm.Day, v);
+    v = i2str_zeropad( tm.Day, v);
     v++[0] = '-';
-    v = i2str( tm.Month, v);
+    v = i2str_zeropad( tm.Month, v);
     v++[0] = '-';
-    v = i2str( 1970 + tm.Year - 2000, v);
+    v = i2str_zeropad( 1970 + tm.Year - 2000, v);
 
     //Terminator
     v++[0] = 0;
-
   }
 }
 
@@ -589,7 +608,6 @@ void setup() {
 
   //  Alarm.timerRepeat(1, Repeats);            // timer for every 15 seconds
 
-
   // put your setup code here, to run once:
   /* connect u8glib with m2tklib */
   m2_SetU8g(u8g.getU8g(), m2_u8g_box_icon);
@@ -599,9 +617,10 @@ void setup() {
 
   /* assign u8g font to index 0 */
   //
-  m2.setFont(0,  u8g_font_courR08r);
+  //m2.setFont(0,  u8g_font_courR08r);
   //m2.setFont(0, u8g_font_helvR08r);
-  //m2.setFont(0, u8g_font_profont10r);
+  m2.setFont(0, u8g_font_profont10r);
+  //m2.setFont(0, u8g_font_profont11r);
   //m2.setFont(0, u8g_font_profont12r);
 
   //m2.setFont(0, u8g_font_lucasfont_alternater);  //Very compact font
@@ -609,8 +628,10 @@ void setup() {
   //m2.setFont(0, u8g_font_6x10r);
   //m2.setFont(0, u8g_font_ncenR08r);
 
-  //Large clock font - numbers only m2.setFont(1, u8g_font_fur30n);
-
+  //Large clock font - numbers only
+  //m2.setFont(1, u8g_font_freedoomr25n);
+  m2.setFont(1, u8g_font_helvB24n);
+  //m2.setFont(1, u8g_font_fub25n);
 
   //m2_SetU8gToggleFontIcon(u8g_font_m2icon_9, active_encoding, inactive_encoding);
   //m2_SetU8gRadioFontIcon(u8g_font_m2icon_9, active_encoding, inactive_encoding);
@@ -621,9 +642,14 @@ void setup() {
   wbusObject.wbus_init();
 
   //Return to top home menu
-  m2.setRoot(&top_buttonmenu);
+  //m2.setRoot(&top_buttonmenu);
+
+  m2.setRoot(&el_bigclock);
+
 }
 
+bool footerToggle;
+byte updateDisplayCounter = 0;
 
 void keepAlive() {
   //The heater units controller appears to "sleep" after a few seconds of inactivity
@@ -632,36 +658,78 @@ void keepAlive() {
 
   //Only need to communicate every few seconds
   if ((currentMillis - previousMillis) > 1700) {
-    
-    updatedisplay=true;
     previousMillis = currentMillis;
 
-    updateClockString();
-
-    memset(menufooter, 0, sizeof(menufooter));
-    char* v = menufooter;
-
-    int err = wbusObject.wbus_sensor_read(&KeepAlive_wb_sensors, QUERY_STATE);
-
-    if (err == 0) {
-      //strcat_P(v, label_NoFaultsFound);
-
-      //v += sprintf(v, "OP:0x%x, N:%d  Dev:0x%x", KeepAlive_wb_sensors.value[0], KeepAlive_wb_sensors.value[1], KeepAlive_wb_sensors.value[2]);
-
-      strcat_P(v, label_OP); v += strlen_P(label_OP);
-      v = PrintHexByte(v, KeepAlive_wb_sensors.value[0]);
-      strcat_P(v, label_N); v += strlen_P(label_N);
-      v = i2str( KeepAlive_wb_sensors.value[1], v);
-      strcat_P(v, label_Dev); v += strlen_P(label_Dev);
-      v = PrintHexByte(v, KeepAlive_wb_sensors.value[2]);
-      v++[0]=0;
-
-
-      //What to do with errors?
+    //Query heater every few seconds to keep it alive
+    int err;
+    if (footerToggle) {
+      err = wbusObject.wbus_sensor_read(&KeepAlive_wb_sensors, QUERY_STATE);
     } else {
-      strcat_P(v, label_wbusError); v += strlen_P(label_wbusError);
-      v = PrintHexByte(v, err);
+      err = wbusObject.wbus_sensor_read(&KeepAlive_wb_sensors, QUERY_SENSORS);
     }
+
+    if (updateDisplayCounter == 0 || err != 0) {
+
+      updatedisplay = true;
+      updateClockString();
+
+      memset(menufooter, 0, sizeof(menufooter));
+      char* v = menufooter;
+
+      if (err != 0) {
+        //What to do with errors?
+        strcat_P(v, label_wbusError); v += strlen_P(label_wbusError);
+        v = PrintHexByte(v, err);
+      } else {
+
+        if (footerToggle) {
+          //strcat_P(v, label_NoFaultsFound);
+          //v += sprintf(v, "OP:0x%x, N:%d  Dev:0x%x", KeepAlive_wb_sensors.value[0], KeepAlive_wb_sensors.value[1], KeepAlive_wb_sensors.value[2]);
+
+          strcat_P(v, label_OP); v += strlen_P(label_OP);
+          v = PrintHexByte(v, KeepAlive_wb_sensors.value[0]);
+          strcat_P(v, label_N); v += strlen_P(label_N);
+          v = i2str( KeepAlive_wb_sensors.value[1], v);
+          strcat_P(v, label_Dev); v += strlen_P(label_Dev);
+          v = PrintHexByte(v, KeepAlive_wb_sensors.value[2]);
+          v++[0] = 0;
+        } else {
+          //v += sprintf(str, "Temp = %d, Volt = ", BYTE2TEMP(s->value[0]));
+          //v += WORD2VOLT_TEXT(str, s->value + 1);
+          //v += sprintf(str, ", FD = %d, HE = %d, GPR = %d",s->value[3], WORD2WATT(s->value + 4), s->value[6]);
+          //v+= BYTE2GPR_TEXT(str, s->value[7]);
+
+          //strcat_P(v, label_Temperature); v += strlen_P(label_Temperature);
+          v[0] = 'T'; v++;
+          v = i2str( BYTE2TEMP(KeepAlive_wb_sensors.value[0]), v);
+
+          v[0] = ' '; v++;
+          v[0] = 'V'; v++;
+          //strcat_P(v, label_SupplyVoltage); v += strlen_P(label_SupplyVoltage);
+          v = i2str( twobyte2word(&KeepAlive_wb_sensors.value[1]), v);
+
+          v[0] = ' '; v++;
+          v[0] = 'F'; v++;
+          v = i2str( KeepAlive_wb_sensors.value[3], v);
+
+          v[0] = ' '; v++;
+          v[0] = 'H'; v++;
+          v = i2str( twobyte2word(&KeepAlive_wb_sensors.value[4]), v);
+
+          v[0] = ' '; v++;
+          v[0] = 'G'; v++;
+          v = i2str( KeepAlive_wb_sensors.value[6], v);
+        }
+      }
+
+      //Update every 5 refreshes
+      updateDisplayCounter = 5 + 1;
+
+      footerToggle = !footerToggle;
+
+    }
+    updateDisplayCounter--;
+
   }
 }
 
@@ -674,7 +742,7 @@ void loop() {
   m2.checkKey();
 
   if ( m2.handleKey() | updatedisplay ) {
-    updatedisplay=false;
+    updatedisplay = false;
     u8g.firstPage();
     do {
       m2.draw();
