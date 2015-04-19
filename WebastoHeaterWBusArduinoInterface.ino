@@ -21,6 +21,8 @@
 
 */
 
+// __TIME__ __DATE__
+
 #include <Arduino.h>
 
 #include <Time.h>
@@ -41,7 +43,9 @@
 
 #define uiKeySelectPin  2
 #define uiKeyNextPin  3
+#define uiKeyPrevPin 12
 
+/*
 //Pins for KS0108 based display, this one is 192x64 pixels and needs a lot of pins!
 U8GLIB_KS0108_192 u8g(
   //D0-D7
@@ -58,6 +62,23 @@ U8GLIB_KS0108_192 u8g(
   17,
   //rw
   16 ); 		// en=18 (A4), cs1=14 (a0) , cs2= (a1),di=17 (a3),rw=16 (a2), cs3= 19 (a5)
+*/
+
+U8GLIB_KS0108_128 u8g(
+//D0-D7
+8, 9, 10, 11, 
+4, 5, 6, 7, 
+//en=13 D13
+13, 
+//cs1 = 14/a0
+14, 
+//cs2 = 15/a1
+15, 
+//di = 17/a3
+17, 
+//rw = 16/a2
+16); 		// 8Bit Com: D0..D7: 8,9,10,11,4,5,6,7 en=18, cs1=14, cs2=15,di=17,rw=16
+
 
 /* Global static variables */
 wbus wbusObject(Serial);
@@ -83,6 +104,8 @@ unsigned long currentMillis;
 
 wb_sensor_t KeepAlive_wb_sensors;
 bool updatedisplay;
+bool footerToggle;
+uint8_t updateDisplayCounter = 0;
 
 /* DISPLAY FOR INFO PAGES */
 M2_INFO(el_labelptr, "w178l5f0" , &first_visible_line1, &total_lines1, value, fn_information_close);
@@ -146,7 +169,7 @@ M2_XYLIST(el_bigclock, NULL, list_clocklist);
 //M2tk m2(&el_infopages_root, m2_es_arduino_serial , m2_eh_6bs, m2_gh_glcd_bf);
 
 //U8
-M2tk m2(&top_buttonmenu, m2_es_arduino , m2_eh_2bs, m2_gh_u8g_bf);
+M2tk m2(&top_buttonmenu, m2_es_arduino , m2_eh_4bs, m2_gh_u8g_bf);
 
 
 const char *label_date(m2_rom_void_p element)
@@ -630,7 +653,7 @@ void setup() {
 
   //Large clock font - numbers only
   //m2.setFont(1, u8g_font_freedoomr25n);
-  m2.setFont(1, u8g_font_helvB24n);
+  m2.setFont(1, u8g_font_helvB18n);
   //m2.setFont(1, u8g_font_fub25n);
 
   //m2_SetU8gToggleFontIcon(u8g_font_m2icon_9, active_encoding, inactive_encoding);
@@ -638,7 +661,7 @@ void setup() {
 
   m2.setPin(M2_KEY_SELECT, uiKeySelectPin);
   m2.setPin(M2_KEY_NEXT, uiKeyNextPin);
-
+  m2.setPin(M2_KEY_PREV, uiKeyPrevPin);
   wbusObject.wbus_init();
 
   //Return to top home menu
@@ -648,8 +671,6 @@ void setup() {
 
 }
 
-bool footerToggle;
-byte updateDisplayCounter = 0;
 
 void keepAlive() {
   //The heater units controller appears to "sleep" after a few seconds of inactivity
@@ -670,6 +691,10 @@ void keepAlive() {
 
     if (updateDisplayCounter == 0 || err != 0) {
 
+        //Force menu system to redraw to show our changes
+        //Use updatedisplay instead so we can timeout if needed
+        //m2.setKey(M2_KEY_REFRESH);
+        
       updatedisplay = true;
       updateClockString();
 
@@ -723,7 +748,7 @@ void keepAlive() {
       }
 
       //Update every 5 refreshes
-      updateDisplayCounter = 5 + 1;
+      updateDisplayCounter = 4 + 1;
 
       footerToggle = !footerToggle;
 
@@ -733,19 +758,33 @@ void keepAlive() {
   }
 }
 
-
+unsigned long time_since_key_press=0;
 
 void loop() {
   keepAlive();
 
   // menu management
   m2.checkKey();
+  m2.checkKey();
 
-  if ( m2.handleKey() | updatedisplay ) {
-    updatedisplay = false;
-    u8g.firstPage();
+  if ( m2.handleKey() | updatedisplay) {
+    
+    if (!updatedisplay) {      
+      //Key was pressed so reset clock timer to now+45 seconds
+      time_since_key_press=millis()+45000;
+    }
+    
+    updatedisplay=false;    
+    
+    u8g.firstPage();    
     do {
       m2.draw();
-    } while ( u8g.nextPage() );
+    } while ( u8g.nextPage() );   
   }
+  
+  //Must be a way to save us 4 bytes instead of using an unsigned long for time_since_key_press
+  if (millis()>time_since_key_press) {
+   m2.setRoot(&el_bigclock);
+   } 
+  
 }

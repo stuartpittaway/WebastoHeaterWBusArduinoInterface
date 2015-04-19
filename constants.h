@@ -21,16 +21,16 @@
 //Version info page
 PROGMEMLABEL(label_WBUSVer,"WBus ver:")
 PROGMEMLABEL(label_WBusCode,"\nWBus code:")
-PROGMEMLABEL(label_DatasetIDNo,"\nDataset id no:")
-PROGMEMLABEL(label_SoftwareIDNo,"SW id no:")
+PROGMEMLABEL(label_DatasetIDNo,"\nDataset id:")
+PROGMEMLABEL(label_SoftwareIDNo,"SW id:")
 PROGMEMLABEL(label_DateOfManufactureControlUnit,"\nDate ctrl unit:")
 PROGMEMLABEL(label_HWVersion,"HW ver:")
 PROGMEMLABEL(label_SoftwareVersion,"SW ver:")
-PROGMEMLABEL(label_SoftwareVersionEEPROM,"\nSW ver EEPROM:")
+PROGMEMLABEL(label_SoftwareVersionEEPROM,"\nSW ver EEPROM:\n")
 
 //Heater info page
 PROGMEMLABEL(label_DeviceName,"Name:")
-PROGMEMLABEL(label_DeviceIDNo,"\nDevice id no:")
+PROGMEMLABEL(label_DeviceIDNo,"\nDevice id:")
 PROGMEMLABEL(label_DateOfManufactureHeater,"\nDate heater:")
 PROGMEMLABEL(label_CustomerIdentificationNumber,"\nCust id num:")
 PROGMEMLABEL(label_SerialNumber,"\nSerial num:")
@@ -42,7 +42,6 @@ PROGMEMLABEL(label_Wed,"Wed ")
 PROGMEMLABEL(label_Thu,"Thu ")
 PROGMEMLABEL(label_Fri,"Fri ")
 PROGMEMLABEL(label_Sat,"Sat ")
-
 PROGMEMLABEL(label_Sun,"Sun ")
 
 const char* const weekdays_table[] PROGMEM = {label_Unknown, label_Mon, label_Tue, label_Wed, label_Thu, label_Fri,label_Sat  };
@@ -52,7 +51,7 @@ PROGMEMLABEL(label_ErrorCount,"Error ")
 /* Fault screen */
 PROGMEMLABEL(label_Code,"Code:")
 PROGMEMLABEL(label_Flag,"\nFlag:")
-PROGMEMLABEL(label_Counter,"\nCounts:")
+PROGMEMLABEL(label_Counter,"\nCount:")
 PROGMEMLABEL(label_OperatingState,"\nOp state:")
 PROGMEMLABEL(label_Temperature,"Temp:")
 PROGMEMLABEL(label_SupplyVoltage," C\nSupply V:")
@@ -63,13 +62,12 @@ PROGMEMLABEL(label_OperatingTime,"\nOp time:")
 
 PROGMEMLABEL(label_wbusError,"WBUS err 0x")
 
-PROGMEMLABEL(label_NoFaultsFound,"No faults found")
+PROGMEMLABEL(label_NoFaultsFound,"No fault found")
 PROGMEMLABEL(label_FaultsCleared,"All faults cleared")
 PROGMEMLABEL(label_NoMoreFaultsFound,"No more faults")
 
-
-  PROGMEMLABEL(label_OP, "Op:0x")
-  PROGMEMLABEL(label_N, " N:")
-  PROGMEMLABEL(label_Dev, " Dev:0x")
+PROGMEMLABEL(label_OP, "Op:0x")
+PROGMEMLABEL(label_N, " N:")
+PROGMEMLABEL(label_Dev, " Dev:0x")
 
 
