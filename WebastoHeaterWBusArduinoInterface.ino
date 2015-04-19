@@ -23,6 +23,8 @@
 
 // __TIME__ __DATE__
 
+
+
 #include <Arduino.h>
 
 #include <Time.h>
@@ -43,42 +45,12 @@
 
 #define uiKeySelectPin  2
 #define uiKeyNextPin  3
-#define uiKeyPrevPin 12
+#define uiKeyPrevPin 4
 
-/*
-//Pins for KS0108 based display, this one is 192x64 pixels and needs a lot of pins!
-U8GLIB_KS0108_192 u8g(
-  //D0-D7
-  8, 9, 10, 11, 4, 5, 6, 7,
-  //en 18=A4 i2c
-  13,
-  //cs1
-  14,
-  //cs2
-  15,
-  //cs3 19=A5 i2c
-  12,
-  //di
-  17,
-  //rw
-  16 ); 		// en=18 (A4), cs1=14 (a0) , cs2= (a1),di=17 (a3),rw=16 (a2), cs3= 19 (a5)
-*/
-
-U8GLIB_KS0108_128 u8g(
-//D0-D7
-8, 9, 10, 11, 
-4, 5, 6, 7, 
-//en=13 D13
-13, 
-//cs1 = 14/a0
-14, 
-//cs2 = 15/a1
-15, 
-//di = 17/a3
-17, 
-//rw = 16/a2
-16); 		// 8Bit Com: D0..D7: 8,9,10,11,4,5,6,7 en=18, cs1=14, cs2=15,di=17,rw=16
-
+//The famous Nokia 5110 display, driven by a PCD8544 chip.  Resolution 84x48 pixels.
+//u8g_dev_pcd8544_84x48_hw_spi
+//U8GLIB_PCD8544(cs, a0 [, reset])
+U8GLIB_PCD8544 u8g(10, 9 , 8);
 
 /* Global static variables */
 wbus wbusObject(Serial);
@@ -107,23 +79,23 @@ bool updatedisplay;
 bool footerToggle;
 uint8_t updateDisplayCounter = 0;
 
+//Display 84x48 pixels
+
 /* DISPLAY FOR INFO PAGES */
-M2_INFO(el_labelptr, "w178l5f0" , &first_visible_line1, &total_lines1, value, fn_information_close);
+M2_INFO(el_labelptr, "w76l5f0" , &first_visible_line1, &total_lines1, value, fn_information_close);
 //M2_SPACE(el_space, "w1h1");
 M2_VSB(el_strlist_vsb, "w4l5" , &first_visible_line1, &total_lines1);
 M2_LIST(list_strlist) = { &el_labelptr, &el_strlist_vsb };
 M2_HLIST(el_strlist_hlist, NULL, list_strlist);
-M2_ALIGN(el_infopages_root, "-1|1W192H64", &el_strlist_hlist);
+M2_ALIGN(el_infopages_root, "w84w48", &el_strlist_hlist);
 
 /* FAULT DISPLAY*/
-M2_INFO(el_labelptr2, "w178l5f0" , &first_visible_line1, &total_lines1, value, fn_shownextfault);
+M2_INFO(el_labelptr2, "w76l5f0" , &first_visible_line1, &total_lines1, value, fn_shownextfault);
 M2_LIST(list_strlist2) = { &el_labelptr2, &el_strlist_vsb };
 M2_HLIST(el_strlist_hlist2, NULL, list_strlist2);
-M2_ALIGN(top_nextfaulttopelement, "-1|1W192H64", &el_strlist_hlist2);
+M2_ALIGN(top_nextfaulttopelement, "w84h48", &el_strlist_hlist2);
 
 /* MAIN MENU */
-//M2_LABELFN(el_clock_label, NULL, label_clock);
-//M2_LABELFN(el_date_label, NULL, label_date);
 M2_LABELFN(el_footer_label, NULL, label_footer);
 
 M2_BUTTON(el_button_information_basic, "", "Heater info", fn_information_basic);
@@ -132,20 +104,18 @@ M2_BUTTON(el_button_faults, "", "Show faults", fn_faults);
 M2_BUTTON(el_button_clear_faults, "", "Clear faults", fn_clear_faults);
 M2_SPACE(el_menu_space, "w1h2");
 
-//M2_LIST(list_headerbarlist) = { &el_clock_label, &el_date_label};
-//M2_HLIST(el_headerbarlist, NULL, list_headerbarlist);
-//M2_LIST(list_buttonlist) = { &el_headerbarlist, &el_menu_space, &el_button_information_basic, &el_button_information_versions, &el_button_faults, &el_button_clear_faults, &el_menu_space, &el_footer_label };
 M2_LIST(list_buttonlist) = { &el_button_information_basic, &el_button_information_versions, &el_button_faults, &el_button_clear_faults, &el_menu_space, &el_footer_label };
 M2_VLIST(el_buttonmenu, NULL, list_buttonlist);
-M2_ALIGN(top_buttonmenu, "-0|2W64H64", &el_buttonmenu);
+//Align top left corner
+M2_ALIGN(top_buttonmenu, "-0|2w84h48", &el_buttonmenu);
 
-
-M2_LABELFN(el_big_label_clock, "f1x16y32", label_clock);
-M2_LABELFN(el_big_label_date, "x0y0", label_date);
-M2_BUTTON(el_button_clock_close, "x98y0", "Menu", fn_button_closeclock);
-M2_LIST(list_clocklist) = {&el_big_label_clock, &el_big_label_date, &el_button_clock_close };
-M2_XYLIST(el_bigclock, NULL, list_clocklist);
-//M2_ALIGN(el_bigclock, "-1|1W64H64", &el_bigclock_vlist);
+M2_LABELFN(el_big_label_clock, "f9w64", label_clock);
+M2_LABELFN(el_big_label_date, "w64f8", label_date);
+M2_BUTTON(el_button_clock_close, "w64f8", "Menu", fn_button_closeclock);
+M2_LIST(list_clocklist) = {&el_big_label_clock,&el_menu_space,&el_menu_space, &el_big_label_date, &el_menu_space,&el_menu_space,&el_button_clock_close };
+M2_VLIST(vlist_clocklist,NULL,list_clocklist);
+//M2_XYLIST(el_bigclock, NULL, list_clocklist);
+M2_ALIGN(el_bigclock, NULL, &vlist_clocklist);
 
 /*
     element: Root element of the menu.
@@ -165,11 +135,9 @@ M2_XYLIST(el_bigclock, NULL, list_clocklist);
     gh: Graphics handler, which writes the menu to an output device.
 */
 
-//GLCD
-//M2tk m2(&el_infopages_root, m2_es_arduino_serial , m2_eh_6bs, m2_gh_glcd_bf);
-
 //U8
-M2tk m2(&top_buttonmenu, m2_es_arduino , m2_eh_4bs, m2_gh_u8g_bf);
+//M2tk m2(&top_buttonmenu, m2_es_arduino , m2_eh_4bs, m2_gh_u8g_bf);
+M2tk m2(&top_buttonmenu, m2_es_arduino_rotary_encoder , m2_eh_4bd, m2_gh_u8g_bf);
 
 
 const char *label_date(m2_rom_void_p element)
@@ -660,8 +628,12 @@ void setup() {
   //m2_SetU8gRadioFontIcon(u8g_font_m2icon_9, active_encoding, inactive_encoding);
 
   m2.setPin(M2_KEY_SELECT, uiKeySelectPin);
-  m2.setPin(M2_KEY_NEXT, uiKeyNextPin);
-  m2.setPin(M2_KEY_PREV, uiKeyPrevPin);
+  //m2.setPin(M2_KEY_NEXT, uiKeyNextPin);
+  //m2.setPin(M2_KEY_PREV, uiKeyPrevPin);
+  
+   m2.setPin(M2_KEY_ROT_ENC_A, uiKeyNextPin);
+  m2.setPin(M2_KEY_ROT_ENC_B, uiKeyPrevPin);
+  
   wbusObject.wbus_init();
 
   //Return to top home menu
