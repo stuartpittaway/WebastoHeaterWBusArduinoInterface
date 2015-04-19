@@ -37,7 +37,6 @@
 
 #include "wbus.h"
 
-
 #include <M2tk.h>
 //Only for u8glib
 #include <U8glib.h>
@@ -98,13 +97,14 @@ M2_ALIGN(top_nextfaulttopelement, "w84h48", &el_strlist_hlist2);
 /* MAIN MENU */
 M2_LABELFN(el_footer_label, NULL, label_footer);
 
+M2_BUTTON(el_button_heater_sh_on, "", "SH Heat On", fn_heater_sh_on);
 M2_BUTTON(el_button_information_basic, "", "Heater info", fn_information_basic);
 M2_BUTTON(el_button_information_versions, "", "Version info", fn_information_versions);
 M2_BUTTON(el_button_faults, "", "Show faults", fn_faults);
 M2_BUTTON(el_button_clear_faults, "", "Clear faults", fn_clear_faults);
 M2_SPACE(el_menu_space, "w1h2");
 
-M2_LIST(list_buttonlist) = { &el_button_information_basic, &el_button_information_versions, &el_button_faults, &el_button_clear_faults, &el_menu_space, &el_footer_label };
+M2_LIST(list_buttonlist) = { &el_button_heater_sh_on, &el_button_information_basic, &el_button_information_versions, &el_button_faults, &el_button_clear_faults, &el_menu_space, &el_footer_label };
 M2_VLIST(el_buttonmenu, NULL, list_buttonlist);
 //Align top left corner
 M2_ALIGN(top_buttonmenu, "-0|2w84h48", &el_buttonmenu);
@@ -335,6 +335,13 @@ void fn_information_basic(m2_el_fnarg_p fnarg) {
   build_info_text_basic();
   m2.setRoot(&el_infopages_root);
 }
+
+
+void fn_heater_sh_on(m2_el_fnarg_p fnarg) {
+  clearBuffer();
+  m2.setRoot(&el_infopages_root);
+}
+
 void fn_button_closeclock(m2_el_fnarg_p fnarg) {
   //Close clock and show top menu
   m2.setRoot(&top_buttonmenu);
