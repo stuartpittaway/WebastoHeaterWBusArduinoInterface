@@ -19,21 +19,21 @@
 #define PROGMEMLABEL(label,value)  const char PROGMEM label[] = value; 
 
 //Version info page
-PROGMEMLABEL(label_WBUSVer,"WBus ver:\n")
-PROGMEMLABEL(label_WBusCode,"\nWBus code:\n")
-PROGMEMLABEL(label_DatasetIDNo,"\nDataset id:\n")
-PROGMEMLABEL(label_SoftwareIDNo,"SW id:\n")
-PROGMEMLABEL(label_DateOfManufactureControlUnit,"\nDate ctrl unit:\n")
-PROGMEMLABEL(label_HWVersion,"HW ver:\n")
-PROGMEMLABEL(label_SoftwareVersion,"SW ver:\n")
-PROGMEMLABEL(label_SoftwareVersionEEPROM,"\nSW ver EEPROM:\n")
+PROGMEMLABEL(label_WBUSVer,"WBus ver\n")
+PROGMEMLABEL(label_WBusCode,"\nWBus code\n")
+PROGMEMLABEL(label_DatasetIDNo,"\nDataset\n")
+PROGMEMLABEL(label_SoftwareIDNo,"SW\n")
+PROGMEMLABEL(label_DateOfManufactureControlUnit,"\nDate ctrl unit\n")
+PROGMEMLABEL(label_HWVersion,"HW ver\n")
+PROGMEMLABEL(label_SoftwareVersion,"SW ver\n")
+PROGMEMLABEL(label_SoftwareVersionEEPROM,"\nSW ver EEPROM\n")
 
 //Heater info page
-PROGMEMLABEL(label_DeviceName,"Name:\n")
-PROGMEMLABEL(label_DeviceIDNo,"\nDevice id:\n")
-PROGMEMLABEL(label_DateOfManufactureHeater,"\nDate heater:\n")
-PROGMEMLABEL(label_CustomerIdentificationNumber,"\nCust id num:\n")
-PROGMEMLABEL(label_SerialNumber,"\nSerial num:\n")
+PROGMEMLABEL(label_DeviceName,"Name\n")
+PROGMEMLABEL(label_DeviceIDNo,"\nDevice id\n")
+PROGMEMLABEL(label_DateOfManufactureHeater,"\nDate heater\n")
+PROGMEMLABEL(label_CustomerIdentificationNumber,"\nCust id\n")
+PROGMEMLABEL(label_SerialNumber,"\nSerial\n")
 
 PROGMEMLABEL(label_Unknown,"? ")
 PROGMEMLABEL(label_Mon,"Mon ")
@@ -57,14 +57,22 @@ PROGMEMLABEL(label_Temperature,"Temp:")
 PROGMEMLABEL(label_SupplyVoltage," C\nSupply V:")
 PROGMEMLABEL(label_OperatingTime,"\nOp time:")
 
-PROGMEMLABEL(label_wbusError,"WBUS err 0x")
+PROGMEMLABEL(label_wbusError,"Err 0x")
 
 PROGMEMLABEL(label_NoFaultsFound,"No fault found")
-PROGMEMLABEL(label_FaultsCleared,"All faults cleared")
+PROGMEMLABEL(label_FaultsCleared,"Faults cleared")
 PROGMEMLABEL(label_NoMoreFaultsFound,"No more faults")
 
-PROGMEMLABEL(label_OP, "Op:0x")
+PROGMEMLABEL(label_OP, "Op:")
 PROGMEMLABEL(label_N, " N:")
-PROGMEMLABEL(label_Dev, " Dev:0x")
+PROGMEMLABEL(label_Dev, "Dev:")
 
+/* Menu Options */
+PROGMEMLABEL(label_menu_shheaton, "SH Heat On")
+PROGMEMLABEL(label_menu_heaterinfo, "Heater info")
+PROGMEMLABEL(label_menu_versioninfo, "Version info")
+PROGMEMLABEL(label_menu_showfaults, "Show faults")
+PROGMEMLABEL(label_menu_clearfaults, "Clear faults")
+
+PROGMEMLABEL(label_shheaterswitchedon, "SH heater On")
 
