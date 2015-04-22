@@ -59,7 +59,7 @@ typedef struct {
 
 typedef err_info_t *HANDLE_ERRINFO;
 
-
+/*
 class wbus
 {
   private:
@@ -70,24 +70,24 @@ class wbus
     void OpenSerial();
     char* hexdump(char *str, unsigned char *d, int l);
     int wbus_io( uint8_t cmd, uint8_t *out, uint8_t *out2, int len2, uint8_t *in, int *dlen, int skip);
-    HardwareSerial& _MySerial;
 
   public:
     // Constructor takes address of serial port
     wbus(HardwareSerial& serial);
-    int wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx);
     //void wbus_sensor_print(char *str, HANDLE_WBSENSOR s);
     //void wbus_ident_print(char *str, HANDLE_WBINFO i, int line);
     ~wbus();
+};
+*/
+
+//HardwareSerial& _MySerial;
+    int wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx);
     void wbus_init();
     int wbus_get_version_wbinfo(HANDLE_VERSION_WBINFO i);
     int wbus_get_basic_info(HANDLE_BASIC_WBINFO i);
-    
+   
     int wbus_get_fault_count(unsigned char ErrorList[32]);
     int wbus_get_fault(unsigned char ErrorNumber, HANDLE_ERRINFO errorInfo);
     int wbus_clear_faults();
-
-};
-
 
 

@@ -6,68 +6,13 @@
  */
 
 #include "wbus.h"
-#include <Arduino.h>
 #include "wbus_const.h"
 
-
-/* Data format / unit translation macros */
-//static inline void SWAP(unsigned char *out, unsigned short in)
-//{
-//  out[1] = (in &  0xff);
-//  out[0] = (in >> 8) & 0xff;
-//}
+uint16_t CommunicationsErrorCount=0;
 
 
-/*
- * Convert a short representing mili something (volt, ohm) to a decimal string featuring a nice dot :)
- *
- * Why? Because many uC sprintf implementations do not support floats.
- */
-//static inline int shortToMili(char *t, short x)
-//{
-//  sprintf(t, "%06d", x);
-//  t[0] = t[1];
-//  t[1] = t[2];
-//  t[2] = '.';
-//  return 6;
-//}
-//
-//static inline int byteToMili(char *t, unsigned char x)
-//{
-//  sprintf(t, "%05d", x);
-//  t[0] = t[1];
-//  t[1] = '.';
-//  return 5;
-//}
-
-//#define PERCENT2WORD(w, p) SWAP(&w, (short)(p)*2)
-//#define FREQ2WORD(w, f)    SWAP(&w, (short)((f)*20) )
-//#define TEMP2BYTE(x)	  ((x)+50)
-//#define VOLT2WORD(w,v)	  SWAP(&w, v)
-//#define WORD2FPWR_TEXT(t, w) shortToMili(t, twobyte2word(w))
-//#define HOUR2WORD(w, h)	  SWAP(&w, h)
-//#define BYTE2GPR_TEXT(t, b)  byteToMili(t, b)
-//#define WATT2WORD(w, W)    SWAP(&w, W)
-
-//#define OHM2WORD(w, o)     SWAP(&w, o)
-//#define RPM2WORD(w, r)     SWAP(&w, r)
-//#define WORD2RPM(w)        twobyte2word(w)
-
-
-// Constructor takes address of serial port
-wbus::wbus(HardwareSerial& serial) : _MySerial(serial)
-{
-
-}
-
-wbus::~wbus()
-{
-  _MySerial.end();
-}
-
-
-void wbus::wbus_init() {
-  _MySerial.end();
+void wbus_init() {
+  Serial.end();
   //Break set
 
 #if defined(__AVR_ATmega328P__)
@@ -80,30 +25,14 @@ void wbus::wbus_init() {
   delay(25);
 #endif
 
-
-  //#if defined(__AVR_ATmega2560__)
-  //  //This code is for Arduino ATMEGA2560 with hardware serial port 3 connected to WBUS, PORTJ is pin 14 and 15
-  //  //Signal is inverted by WBUS interface
-  //
-  //  pinMode(_TXpin,OUTPUT);
-  //  digitalWrite(_TXpin,HIGH);
-  //  delay(250);
-  //  digitalWrite(_TXpin,LOW);
-  //  delay(25);
-  //  digitalWrite(_TXpin,HIGH);
-  //  delay(25);
-  //#endif
-
-
   // initialize serial communication at 2400 bits per second, 8 bit data, even parity and 1 stop bit
-  _MySerial.begin(2400, SERIAL_8E1);
+  Serial.begin(2400, SERIAL_8E1);
 
   //250ms for timeouts
-  _MySerial.setTimeout(250);
+  Serial.setTimeout(250);
 
   // Empty all queues. BRK toggling may cause a false received byte (or more than one who knows).
-  while (_MySerial.available()) _MySerial.read();
-
+  while (Serial.available()) Serial.read();
 }
 
 
@@ -112,7 +41,7 @@ void wbus::wbus_init() {
  * \param len length of data
  * \param chk initial value of the checksum. Useful for concatenating.
  */
-unsigned char wbus::checksum(unsigned char *buf, unsigned char len, unsigned char chk)
+unsigned char checksum(unsigned char *buf, unsigned char len, unsigned char chk)
 {
   for (; len != 0; len--) {
     chk ^= *buf++;
@@ -131,7 +60,7 @@ unsigned char wbus::checksum(unsigned char *buf, unsigned char len, unsigned cha
  * \param len length the second data buffer.
  * \return 0 if success, 1 on error.
  */
-int wbus::wbus_msg_send( uint8_t addr,
+int wbus_msg_send( uint8_t addr,
                          uint8_t cmd,
                          uint8_t *data,
                          int len,
@@ -151,26 +80,22 @@ int wbus::wbus_msg_send( uint8_t addr,
   chksum = checksum(data, len, chksum);
   chksum = checksum(data2, len2, chksum);
 
-
-  //Add a small delay which appears to greatly improve reliability
-  //of communications
-  //delay(1);
-
   /* Send message */
   //rs232_flush(wbus->rs232);
-  _MySerial.write(buf, 3);
-  _MySerial.write(data, len);
-  _MySerial.write(data2, len2);
-  _MySerial.write(&chksum, 1);
+  Serial.write(buf, 3);
+  Serial.write(data, len);
+  Serial.write(data2, len2);
+  Serial.write(&chksum, 1);
 
   /* Read and check echoed header */
-  bytes = _MySerial.readBytes((char*)buf, 3);
+  bytes = Serial.readBytes((char*)buf, 3);
   if (bytes != 3) {
     return -1;
   }
 
   if (buf[0] != addr || buf[1] != (len + len2 + 2)  || buf[2] != cmd) {
     //PRINTF("wbus_msg_send() K-Line error %x %x %x\n", buf[0], buf[1], buf[2]);
+    CommunicationsErrorCount++;
     return -1;
   }
 
@@ -179,25 +104,28 @@ int wbus::wbus_msg_send( uint8_t addr,
     int i;
 
     for (i = 0; i < len; i++) {
-      bytes = _MySerial.readBytes((char*)buf, 1);
+      bytes = Serial.readBytes((char*)buf, 1);
       if (bytes != 1 || buf[0] != data[i]) {
         //PRINTF("wbus_msg_send() K-Line error. %d < 1 (data2)\n", bytes);
+    CommunicationsErrorCount++;
         return -1;
       }
     }
     for (i = 0; i < len2; i++) {
-      bytes = _MySerial.readBytes((char*)buf, 1);
+      bytes = Serial.readBytes((char*)buf, 1);
       if (bytes != 1 || buf[0] != data2[i]) {
         //PRINTF("wbus_msg_send() K-Line error. %d < 1 (data2)\n", bytes);
+    CommunicationsErrorCount++;
         return -1;
       }
     }
   }
 
   /* Check echoed checksum */
-  bytes = _MySerial.readBytes((char*)buf, 1);
+  bytes = Serial.readBytes((char*)buf, 1);
   if (bytes != 1 || buf[0] != chksum) {
     //PRINTF("wbus_msg_send() K-Line error. %d < 1 (data2)\n", bytes);
+    CommunicationsErrorCount++;
     return -1;
   }
 
@@ -208,18 +136,11 @@ int wbus::wbus_msg_send( uint8_t addr,
 /*
  * Read answer from wbus
  * addr: source/destination address pair to be expected or returned in case of host I/O
- * cmd: if pointed location is zero, received client message, if not send client message
- with command *cmd.
- * data: buffer to either receive client data, or sent its content if client (*cmd!=0).
- If *data is !=0, then *data amount of data bytes will  be skipped.
+ * cmd: if pointed location is zero, received client message, if not send client message with command *cmd.
+ * data: buffer to either receive client data, or sent its content if client (*cmd!=0).  If *data is !=0, then *data amount of data bytes will  be skipped.
  * dlen: out: length of data.
  */
-int wbus::wbus_msg_recv(
-  uint8_t *addr,
-  uint8_t *cmd,
-  uint8_t *data,
-  int *dlen,
-  int skip)
+int wbus_msg_recv(uint8_t *addr,  uint8_t *cmd,  uint8_t *data,  int *dlen,  int skip)
 {
   uint8_t buf[3];
   uint8_t chksum;
@@ -227,11 +148,11 @@ int wbus::wbus_msg_recv(
 
   /* Read address header */
   do {
-    if (_MySerial.readBytes((char*)buf, 1) != 1) {
-
+    if (Serial.readBytes((char*)buf, 1) != 1) {
       //if (*cmd != 0) {
       //PRINTF("wbus_msg_recv(): timeout\n");
       //}
+    CommunicationsErrorCount++;
       return -1;
     }
 
@@ -244,10 +165,11 @@ int wbus::wbus_msg_recv(
   //rs232_blocking(wbus->rs232, 0);
 
   /* Read length and command */
-  if (_MySerial.readBytes((char*)buf + 1, 2) != 2) {
+  if (Serial.readBytes((char*)buf + 1, 2) != 2) {
     //    if (*cmd != 0) {
     //     //wbus_msg_recv(): No addr/len error
     //    }
+    CommunicationsErrorCount++;
 
     return -1;
   }
@@ -269,14 +191,14 @@ int wbus::wbus_msg_recv(
   if (len > 0 || skip > 0)
   {
     for (; skip > 0; skip--) {
-      if (_MySerial.readBytes((char*)buf, 1) != 1) {
+      if (Serial.readBytes((char*)buf, 1) != 1) {
         return -1;
       }
       chksum = checksum(buf, 1, chksum);
     }
 
     if (len > 0) {
-      if (_MySerial.readBytes((char*)data, len) != len) {
+      if (Serial.readBytes((char*)data, len) != len) {
         return -1;
       }
       chksum = checksum(data, len, chksum);
@@ -290,14 +212,15 @@ int wbus::wbus_msg_recv(
 
   /* Read and verify checksum */
   //rs232_read(wbus->rs232, buf, 1);
-  _MySerial.readBytes((char*)buf, 1);
+  Serial.readBytes((char*)buf, 1);
 
-  /*
+  
   if (*buf != chksum) {
-   PRINTF("wbus_msg_recv() Checksum error\n");
-   return -1;
+//   PRINTF("wbus_msg_recv() Checksum error\n");
+      CommunicationsErrorCount++;
+ return -1;
    }
-   */
+  
 
   return 0;
 }
@@ -305,13 +228,7 @@ int wbus::wbus_msg_recv(
 /*
  * Send a client W-Bus request and read answer from Heater.
  */
-int wbus::wbus_io( uint8_t cmd,
-                   uint8_t *out,
-                   uint8_t *out2,
-                   int len2,
-                   uint8_t *in,
-                   int *dlen,
-                   int skip)
+int wbus_io( uint8_t cmd,uint8_t *out, uint8_t *out2, int len2,uint8_t *in, int *dlen, int skip)
 {
   int err, tries;
   int len;
@@ -324,6 +241,7 @@ int wbus::wbus_io( uint8_t cmd,
   tries = 0;
   do {
     if (tries != 0) {
+    CommunicationsErrorCount++;
       //PRINTF("wbus_io() retry: %d\n", tries);
       delay(50);
       wbus_init();
@@ -347,13 +265,13 @@ int wbus::wbus_io( uint8_t cmd,
   }
   while (tries < 4 && err != 0);
 
-  //Appears that there is a small 70ms delay on the real Thermotest software between requests, see if mimick this here helps...
+  //Appears that there is a small 70ms delay on the real Thermotest software between requests, see if mimick this here helps reliability...
   delay(30);
 
   return err;
 }
 
-int wbus::wbus_get_fault_count(unsigned char ErrorList[32]) {
+int wbus_get_fault_count(unsigned char ErrorList[32]) {
   int err, len;
 
   unsigned char tmp[2];
@@ -366,7 +284,7 @@ int wbus::wbus_get_fault_count(unsigned char ErrorList[32]) {
   return err;
 }
 
-int wbus::wbus_clear_faults() {
+int wbus_clear_faults() {
   int err, len;
   unsigned char tmp;
 
@@ -375,7 +293,7 @@ int wbus::wbus_clear_faults() {
   return err;
 }
 
-int wbus::wbus_get_fault(unsigned char ErrorNumber, HANDLE_ERRINFO errorInfo) {
+int wbus_get_fault(unsigned char ErrorNumber, HANDLE_ERRINFO errorInfo) {
   int err, len;
 
   unsigned char tmp[2];
@@ -391,7 +309,8 @@ bail:
   return err;
 }
 
-int wbus::wbus_get_version_wbinfo(HANDLE_VERSION_WBINFO i)
+
+int wbus_get_version_wbinfo(HANDLE_VERSION_WBINFO i)
 {
   int err, len;
   unsigned char tmp, tmp2[2];
@@ -416,7 +335,7 @@ bail:
 
 
 /* Overall info */
-int wbus::wbus_get_basic_info(HANDLE_BASIC_WBINFO i)
+int wbus_get_basic_info(HANDLE_BASIC_WBINFO i)
 {
   int err, len;
   unsigned char tmp, tmp2[2];
@@ -439,8 +358,9 @@ bail:
   return err;
 }
 
+
 /* Sensor access */
-int wbus::wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx)
+int wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx)
 {
   int err  = 0;
   int len;
@@ -483,7 +403,7 @@ int wbus::wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx)
 //#define BOOL(x) (((x)!=0)?1:0)
 
 /*
-void wbus::wbus_sensor_print(char *str, HANDLE_WBSENSOR s)
+void wbus_sensor_print(char *str, HANDLE_WBSENSOR s)
 {
   unsigned char v;
 

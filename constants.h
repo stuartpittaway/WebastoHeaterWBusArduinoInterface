@@ -73,6 +73,8 @@ PROGMEMLABEL(label_menu_heaterinfo, "Heater info")
 PROGMEMLABEL(label_menu_versioninfo, "Version info")
 PROGMEMLABEL(label_menu_showfaults, "Show faults")
 PROGMEMLABEL(label_menu_clearfaults, "Clear faults")
+PROGMEMLABEL(label_menu_settime, "Set time")
+PROGMEMLABEL(label_menu_setdate, "Set date")
 
 PROGMEMLABEL(label_shheaterswitchedon, "SH heater On")
 

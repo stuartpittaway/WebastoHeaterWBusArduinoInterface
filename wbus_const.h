@@ -6,8 +6,6 @@
  *
  */
 
-#include <stdio.h>
-
 /*
  * W-Bus addresses_
  * 0xf : thermo Test Software
@@ -128,6 +126,7 @@
 #define		OP_STATE	0
 #define		OP_STATE_N	1
 #define		DEV_STATE	2
+
 /* 3 more unknown bytes */
 #define WB_STATE_BO	0x00 /* Burn out */
 #define	WB_STATE_DEACT1	0x01 /* Deactivation */
@@ -280,6 +279,8 @@
 #define IDENT_WB_VER		0x0a /*!< W-BUS version. Antwort ergibt ein byte. Jedes nibble dieses byte entspricht einer Zahl (Zahl1.Zahl2) */
 #define IDENT_DEV_NAME		0x0b /*!< Device Name: Als character string zu interpretieren. */
 #define IDENT_WB_CODE		0x0c /*!< W-BUS code. 7 bytes. This is sort of a capability bit field */
+
+
 /* W-Bus code bits */
 #define     WB_CODE_0     0 /* Unknown supplemental heater feature */
 #define     WB_CODE_ON    3 /* on/off switch capability */
