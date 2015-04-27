@@ -50,6 +50,8 @@ unsigned char checksum(unsigned char *buf, unsigned char len, unsigned char chk)
 }
 
 
+
+
 /**
  * Send request to heater and one or two consecutive buffers.
  * \param wbus wbus handle
@@ -495,3 +497,59 @@ void wbus_sensor_print(char *str, HANDLE_WBSENSOR s)
 
 
 */
+
+/* Turn heater on for time minutes */
+int wbus_turnOn(WBUS_TURNON mode, unsigned char time)
+{
+  int err = 0;
+  unsigned char cmd;
+  unsigned char tmp[1];
+  int len = 1; 
+
+  switch (mode) {
+    case WBUS_VENT: cmd = WBUS_CMD_ON_VENT; break;
+    case WBUS_SH: cmd = WBUS_CMD_ON_SH; break;
+    case WBUS_PH: cmd = WBUS_CMD_ON_PH; break;
+    default:
+       return -1;
+  }
+  
+  tmp[0] = time;
+  err = wbus_io(cmd, tmp, NULL, 0, tmp, &len, 0);
+	  
+  return err;
+}
+
+/* Check current command */
+int wbus_check(WBUS_TURNON mode)
+{
+  int err = 0;
+  int len = 2;
+  unsigned char tmp[3];
+
+  switch (mode) {
+    case WBUS_VENT: tmp[0] = WBUS_CMD_ON_VENT; break;
+    case WBUS_SH: tmp[0] = WBUS_CMD_ON_SH; break;
+    case WBUS_PH: tmp[0] = WBUS_CMD_ON_PH; break;
+    default:
+       return -1;
+  }
+  tmp[1] = 0;
+   
+  err = wbus_io(WBUS_CMD_CHK, tmp, NULL, 0, tmp, &len, 0);
+	  
+  return err;
+}
+
+/* Turn heater off */
+int wbus_turnOff()
+{
+  int err = 0;
+  int len = 0;
+  unsigned char tmp[2];
+	
+  err = wbus_io(WBUS_CMD_OFF, tmp, NULL, 0, tmp, &len, 0);
+	  
+  return err;
+}
+

@@ -68,7 +68,7 @@ uint8_t ti_mins = 1;
 
 uint8_t total_lines1 = 0;
 uint8_t first_visible_line1 = 0;
-uint8_t currentErrorOnScreen = 0;
+//uint8_t currentErrorOnScreen = 0;
 uint8_t updateDisplayCounter = 0;
 uint8_t total_menu_items = 6;
 
@@ -95,10 +95,10 @@ M2_HLIST(el_strlist_hlist, NULL, list_strlist);
 M2_ALIGN(el_infopages_root, "w84w48", &el_strlist_hlist);
 
 /* FAULT DISPLAY*/
-M2_INFO(el_labelptr2, "w76l5" , &first_visible_line1, &total_lines1, value, fn_shownextfault);
-M2_LIST(list_strlist2) = { &el_labelptr2, &el_vsb };
-M2_HLIST(el_strlist_hlist2, NULL, list_strlist2);
-M2_ALIGN(top_nextfaulttopelement, "w84h48", &el_strlist_hlist2);
+//M2_INFO(el_labelptr2, "w76l5" , &first_visible_line1, &total_lines1, value, fn_shownextfault);
+//M2_LIST(list_strlist2) = { &el_labelptr2, &el_vsb };
+//M2_HLIST(el_strlist_hlist2, NULL, list_strlist2);
+//M2_ALIGN(top_nextfaulttopelement, "w84h48", &el_strlist_hlist2);
 
 /* CLOCK/IDLE page */
 M2_LABELFN(el_big_label_clock, "f8w64", label_clock);
@@ -194,73 +194,6 @@ const char *fn_value(m2_rom_void_p element)
   return value;
 }
 
-/*
-char* getVersion(char *str, unsigned char *d)
-{
-  strcpy_P(str, (char*)pgm_read_word(&(weekdays_table[d[0]])));
-  str += strlen(str);
-  str = PrintHexByte(str, d[1]);
-  str[0] = '/'; str++;
-  str = PrintHexByte(str, d[2]);
-  str[0] = ' '; str++;
-  str = PrintHexByte(str, d[3]);
-  str[0] = '.'; str++;
-  str = PrintHexByte(str, d[4]);
-  //str += sprintf_P(str, label_getVersion, d[1], d[2], d[3], d[4]);
-  return str;
-}
-*/
-
-/*
-void build_versioninfo_text()
-{
-  //904 bytes used by this routine
-
-  char* v = value;
-  wb_version_info_t wb_info;
-
-  int err = wbus_get_version_wbinfo(&wb_info);
-
-  if (!err) {
-    unsigned char b;
-
-    strcat_P(v, label_WBUSVer); v += strlen_P(label_WBUSVer);
-    b = (wb_info.wbus_ver >> 4) & 0x0f;
-    v = i2str(b, v);
-    v++[0] = '.';
-    b = (wb_info.wbus_ver & 0x0f);
-    v = i2str(b, v);
-
-    strcat_P(v, label_WBusCode); v += strlen_P(label_WBusCode);
-    v = hexdump(v, wb_info.wbus_code, 7, true);
-
-    strcat_P(v, label_HWVersion); v += strlen_P(label_HWVersion);
-    v = hexdump(v, wb_info.hw_ver, 2, true);
-
-    strcat_P(v, label_SoftwareVersion); v += strlen_P(label_SoftwareVersion);
-    v = getVersion(v, wb_info.sw_ver);
-
-    strcat_P(v, label_SoftwareVersionEEPROM); v += strlen_P(label_SoftwareVersionEEPROM);
-    v = getVersion(v, wb_info.sw_ver_eeprom);
-
-    strcat_P(v, label_DatasetIDNo); v += strlen_P(label_DatasetIDNo);
-    v = hexdump(v, wb_info.data_set_id, 4, false);
-    v++[0] = wb_info.data_set_id[4];
-    v = hexdump(v, &wb_info.data_set_id[5], 1, true);
-
-    strcat_P(v, label_SoftwareIDNo); v += strlen_P(label_SoftwareIDNo);
-    v = hexdump(v, wb_info.sw_id, 5, false);
-
-    //Output how many bytes used of buffer
-    //v += sprintf(v, "%i", v - value);
-  } else {
-    v = ShowError(v, err);
-  }
-  //Ensure null terminate on string
-  //v[0] = 0;
-}
-*/
-
 void build_info_text_basic()
 {
   char* v = value;
@@ -305,7 +238,6 @@ void build_info_text_basic()
   //v[0] = 0;
 }
 
-
 void home_menu() {
   first_visible_line1 = 0;
   m2.setRoot(&top_buttonmenu);
@@ -317,14 +249,6 @@ void fn_button_showhome(m2_el_fnarg_p fnarg) {
 }
 
 
-char* faultHeaders(char* v) {
-  strcat_P(v, label_ErrorCount); v += strlen_P(label_ErrorCount);
-  v = i2str(currentErrorOnScreen + 1, v);
-  v++[0] = '/';
-  v = i2str(ErrorList[0], v);
-  v++[0] = '\n';
-  return v;
-}
 
 void fn_faults() {
   clearBuffer();
@@ -339,27 +263,95 @@ void fn_faults() {
   if (!err) {
 
     if (ErrorList[0] > 0) {
-      currentErrorOnScreen = 0;
-      v = faultHeaders(v);
-      v = PopulateTextForFault(currentErrorOnScreen, v);
+      //currentErrorOnScreen = 0;
+      //v = faultHeaders(v);
+      //v = PopulateTextForFault(currentErrorOnScreen, v);
+
+      strcat_P(v, label_ErrorCount); v += strlen_P(label_ErrorCount);
+      v = i2str(ErrorList[0], v);
+      v++[0] = '\n';
+
+      err_info_t err_info;
+
+      //  Fault 1
+      //  Metering pump interruption 0x88
+      //  Code 88h
+      //  State: stored, not actual  =0x1
+      //  Counter 3
+      //  Temp: 22oC
+      //  Operating state: Off state  4,0
+      //  Voltage: 12.55V
+      //  Operating hour counter: 5590:15 (h:m)
+
+      for (int errIndex = 0; errIndex++; errIndex < ErrorList[0]) {
+
+        v = i2str(errIndex, v);
+        v++[0] = '\n';
+        
+        unsigned char errCode = ErrorList[errIndex * 2 + 1];
+
+        err = wbus_get_fault(errCode, &err_info);
+
+        if (!err) {                            
+          v++[0] = 'E';
+          v++[0] = ':';
+          v = PrintHexByte(v, err_info.code);
+
+          //01
+          v++[0] = 'F';
+          v++[0] = ':';
+          v = PrintHexByte(v, err_info.flags);
+
+          //03
+          v++[0] = 'C';
+          v++[0] = ':';
+          strcat_P(v, label_Counter); v += strlen_P(label_Counter);
+          v = i2str(err_info.counter, v);
+
+          //04 00
+//          strcat_P(v, label_OperatingState); v += strlen_P(label_OperatingState);
+//          v = PrintHexByte(v, err_info.op_state[0]);
+//          v++[0] = '/';
+//          v = PrintHexByte(v, err_info.op_state[1]);
+//          v++[0] = '\n';
+
+          //48
+//          strcat_P(v, label_Temperature); v += strlen_P(label_Temperature);
+//          v = i2str(BYTE2TEMP(err_info.temp), v);
+
+          //31 06
+//          strcat_P(v, label_SupplyVoltage); v += strlen_P(label_SupplyVoltage);
+//          v = i2str( twobyte2word(err_info.volt), v);
+
+          //5586:31 (h:m) = 15 d2 1f
+          strcat_P(v, label_OperatingTime); v += strlen_P(label_OperatingTime);
+          v = i2str( WORD2HOUR(err_info.hour), v);
+          v++[0] = 'h';
+          v = i2str( err_info.minute, v);
+          v++[0] = 'm';
+          
+          v++[0] = '\n';
+          
+        } else {
+          v = ShowError(v, err);
+        }
+      }
+
     } else {
       strcat_P(v, label_NoFaultsFound); v += strlen_P(label_NoFaultsFound);
+      m2.setRoot(&top_dialog);
+      return;
     }
 
   } else {
     //WBUS error
     v = ShowError(v, err);
   }
+
   //Ensure null terminate on string
   v[0] = 0;
+  m2.setRoot(&el_infopages_root);
 
-  if (ErrorList[0] > 0) {
-    m2.setRoot(&top_nextfaulttopelement);
-  } else
-  {
-    //No more errors
-    m2.setRoot(&top_dialog);
-  }
 }
 
 
@@ -380,31 +372,6 @@ void fn_clear_faults() {
 }
 
 
-void fn_shownextfault(m2_el_fnarg_p fnarg) {
-  /*
-  This is called to build up the next fault information for display
-  */
-  clearBuffer();
-  char* v = value;
-  int err;
-
-  //Show the next fault
-  currentErrorOnScreen++;
-
-  if ((currentErrorOnScreen + 1) < ErrorList[0]) {
-    v = faultHeaders(v);
-    v = PopulateTextForFault(currentErrorOnScreen, v);
-
-    m2.setRoot(&top_nextfaulttopelement);
-  } else {
-    strcat_P(v, label_NoMoreFaultsFound); v += strlen_P(label_NoMoreFaultsFound);
-    m2.setRoot(&top_dialog);
-  }
-
-  //Ensure null terminate on string
-  v[0] = 0;
-}
-
 void clearBuffer() {
   memset(value, 0, sizeof(value));
 }
@@ -417,70 +384,7 @@ char* ShowError(char* v, uint8_t errCode) {
   return v;
 }
 
-char* PopulateTextForFault(uint8_t errIndex, char* v) {
-  err_info_t err_info;
-  int err;
 
-  /*
-  Fault 1
-  Metering pump interruption 0x88
-  Code 88h
-  State: stored, not actual  =0x1
-  Counter 3
-  Temp: 22oC
-  Operating state: Off state  4,0
-  Voltage: 12.55V
-  Operating hour counter: 5590:15 (h:m)
-  */
-
-  unsigned char errCode = ErrorList[errIndex * 2 + 1];
-
-  err = wbus_get_fault(errCode, &err_info);
-  if (!err) {
-
-    //v = hexdump(v, &err_info.code, sizeof(err_info), false);
-
-    // 88
-    strcat_P(v, label_Code); v += strlen_P(label_Code);
-    v = PrintHexByte(v, err_info.code);
-
-    //01
-    strcat_P(v, label_Flag); v += strlen_P(label_Flag);
-    v = PrintHexByte(v, err_info.flags);
-
-    //03
-    strcat_P(v, label_Counter); v += strlen_P(label_Counter);
-    v = i2str(err_info.counter, v);
-
-    //04 00
-    strcat_P(v, label_OperatingState); v += strlen_P(label_OperatingState);
-    v = PrintHexByte(v, err_info.op_state[0]);
-    v++[0] = '/';
-    v = PrintHexByte(v, err_info.op_state[1]);
-    v++[0] = '\n';
-
-    //48
-    strcat_P(v, label_Temperature); v += strlen_P(label_Temperature);
-    v = i2str(BYTE2TEMP(err_info.temp), v);
-
-    //31 06
-    strcat_P(v, label_SupplyVoltage); v += strlen_P(label_SupplyVoltage);
-    //v += WORD2VOLT_TEXT(v, err_info.volt);
-    v = i2str( twobyte2word(err_info.volt), v);
-
-    //5586:31 (h:m) = 15 d2 1f
-    strcat_P(v, label_OperatingTime); v += strlen_P(label_OperatingTime);
-
-    v = i2str( WORD2HOUR(err_info.hour), v);
-    v++[0] = 'h';
-    v = i2str( err_info.minute, v);
-    v++[0] = 'm';
-  } else {
-    v = ShowError(v, err);
-  }
-
-  return v;
-}
 
 unsigned long getTimeFunction() {
   tmElements_t tm;
@@ -582,23 +486,15 @@ const char *el_strlist_getstr(uint8_t idx, uint8_t msg) {
   {
     case 0:
       strcpy_P(v, label_menu_shheaton);
-      //v += strlen_P(label_menu_shheaton);
       break;
     case 1 :
       strcpy_P(v, label_menu_heaterinfo);
-      //v += strlen_P(label_menu_heaterinfo);
       break;
-    //case 2:
-      //strcpy_P(v, label_menu_versioninfo);
-      //v += strlen_P(label_menu_versioninfo);
-      //break;
     case 2:
       strcpy_P(v, label_menu_showfaults);
-      //v += strlen_P(label_menu_showfaults);
       break;
     case 3:
       strcpy_P(v, label_menu_clearfaults);
-      //v += strlen_P(label_menu_clearfaults);
       break;
     case 4:
       strcpy_P(v, label_menu_settime);
@@ -620,6 +516,7 @@ const char *el_strlist_getstr(uint8_t idx, uint8_t msg) {
       case 0:
         //Switch Supplimental heater ON
         strcpy_P(v, label_shheaterswitchedon);
+        wbus_turnOn(WBUS_PH,60);
         m2.setRoot(&top_dialog);
         break;
       case 1 :
@@ -627,11 +524,6 @@ const char *el_strlist_getstr(uint8_t idx, uint8_t msg) {
         build_info_text_basic();
         m2.setRoot(&el_infopages_root);
         break;
-//      case 2:
-//        //label_menu_versioninfo
-//        build_versioninfo_text();
-//        m2.setRoot(&el_infopages_root);
-//        break;
       case 2:
         //label_menu_showfaults
         fn_faults();
@@ -655,7 +547,6 @@ const char *el_strlist_getstr(uint8_t idx, uint8_t msg) {
 
 
 void fn_settime() {
-
   tmElements_t tm;
   breakTime(getTimeFunction(), tm);
 
@@ -813,5 +704,4 @@ void loop() {
   if (millis() > time_since_key_press) {
     m2.setRoot(&el_bigclock);
   }
-
 }

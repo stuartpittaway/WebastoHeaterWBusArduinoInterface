@@ -80,6 +80,14 @@ class wbus
 };
 */
 
+/* Turn heater on/off */
+typedef enum {
+  WBUS_VENT,
+  WBUS_SH,
+  WBUS_PH
+} WBUS_TURNON;
+
+
 //HardwareSerial& _MySerial;
     int wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx);
     void wbus_init();
@@ -90,4 +98,8 @@ class wbus
     int wbus_get_fault(unsigned char ErrorNumber, HANDLE_ERRINFO errorInfo);
     int wbus_clear_faults();
 
+int wbus_turnOn(WBUS_TURNON mode, unsigned char time);
+int wbus_turnOff();
+/* Check or keep alive heating process. mode is the argument that was passed as to wbus_turnOn() */
+int wbus_check(WBUS_TURNON mode);
 

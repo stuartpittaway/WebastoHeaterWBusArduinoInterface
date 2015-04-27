@@ -46,7 +46,7 @@ PROGMEMLABEL(label_Sun,"Sun ")
 
 const char* const weekdays_table[] PROGMEM = {label_Unknown, label_Mon, label_Tue, label_Wed, label_Thu, label_Fri,label_Sat  };
 
-PROGMEMLABEL(label_ErrorCount,"Error ")
+PROGMEMLABEL(label_ErrorCount,"Faults:")
 
 /* Fault screen */
 PROGMEMLABEL(label_Code,"Code:")
