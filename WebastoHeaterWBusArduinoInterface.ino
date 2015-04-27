@@ -20,7 +20,8 @@
    https://sourceforge.net/projects/libwbus/
 
 
-  Compile size 20150422-2039 = 31430 bytes, 826 bytes remaining.  1314 bytes RAM used
+  20150422 Compile size 31430 bytes.  1314 bytes RAM used
+  20150427 Removed some of the version information screens, Arduino 1.6.1, code size= 31086 bytes + 1274 bytes RAM.
 */
 
 // __TIME__ __DATE__
@@ -30,7 +31,7 @@
 #include "utility.h"
 
 #include <Time.h>
-#include <TimeAlarms.h>
+//#include <TimeAlarms.h>
 
 #include <Wire.h>
 #include <DS1307RTC.h>
@@ -69,7 +70,7 @@ uint8_t total_lines1 = 0;
 uint8_t first_visible_line1 = 0;
 uint8_t currentErrorOnScreen = 0;
 uint8_t updateDisplayCounter = 0;
-uint8_t total_menu_items = 7;
+uint8_t total_menu_items = 6;
 
 unsigned char ErrorList[32];
 
@@ -99,9 +100,8 @@ M2_LIST(list_strlist2) = { &el_labelptr2, &el_vsb };
 M2_HLIST(el_strlist_hlist2, NULL, list_strlist2);
 M2_ALIGN(top_nextfaulttopelement, "w84h48", &el_strlist_hlist2);
 
-
 /* CLOCK/IDLE page */
-M2_LABELFN(el_big_label_clock, "f9w64", label_clock);
+M2_LABELFN(el_big_label_clock, "f8w64", label_clock);
 M2_LABELFN(el_big_label_date, "w64f8", label_date);
 M2_BUTTON(el_button_clock_close, "w64f8", "Menu", fn_button_showhome);
 M2_LIST(list_clocklist) = {&el_big_label_clock, &el_menu_space, &el_menu_space, &el_big_label_date, &el_menu_space, &el_menu_space, &el_button_clock_close };
@@ -109,8 +109,8 @@ M2_VLIST(vlist_clocklist, NULL, list_clocklist);
 M2_ALIGN(el_bigclock, NULL, &vlist_clocklist);
 
 /* MAIN MENU */
-M2_STRLIST(el_strlist_menu, "l3w76" , &first_visible_line1, &total_menu_items, el_strlist_getstr);
-M2_VSB(el_vsb_menu, "w4l3" , &first_visible_line1, &total_menu_items);
+M2_STRLIST(el_strlist_menu, "l4w76" , &first_visible_line1, &total_menu_items, el_strlist_getstr);
+M2_VSB(el_vsb_menu, "l4w4" , &first_visible_line1, &total_menu_items);
 M2_LIST(list_menu_strlist) = { &el_strlist_menu, &el_vsb_menu };
 M2_HLIST(el_menu_hlist, NULL, list_menu_strlist);
 
@@ -194,7 +194,7 @@ const char *fn_value(m2_rom_void_p element)
   return value;
 }
 
-
+/*
 char* getVersion(char *str, unsigned char *d)
 {
   strcpy_P(str, (char*)pgm_read_word(&(weekdays_table[d[0]])));
@@ -209,9 +209,10 @@ char* getVersion(char *str, unsigned char *d)
   //str += sprintf_P(str, label_getVersion, d[1], d[2], d[3], d[4]);
   return str;
 }
+*/
 
-
-void build_info_text_versions()
+/*
+void build_versioninfo_text()
 {
   //904 bytes used by this routine
 
@@ -258,7 +259,7 @@ void build_info_text_versions()
   //Ensure null terminate on string
   //v[0] = 0;
 }
-
+*/
 
 void build_info_text_basic()
 {
@@ -481,7 +482,6 @@ char* PopulateTextForFault(uint8_t errIndex, char* v) {
   return v;
 }
 
-
 unsigned long getTimeFunction() {
   tmElements_t tm;
 
@@ -492,8 +492,6 @@ unsigned long getTimeFunction() {
   //Error so just return what we already have
   else return now();
 }
-
-
 
 
 void updateClockString() {
@@ -590,22 +588,22 @@ const char *el_strlist_getstr(uint8_t idx, uint8_t msg) {
       strcpy_P(v, label_menu_heaterinfo);
       //v += strlen_P(label_menu_heaterinfo);
       break;
-    case 2:
-      strcpy_P(v, label_menu_versioninfo);
+    //case 2:
+      //strcpy_P(v, label_menu_versioninfo);
       //v += strlen_P(label_menu_versioninfo);
-      break;
-    case 3:
+      //break;
+    case 2:
       strcpy_P(v, label_menu_showfaults);
       //v += strlen_P(label_menu_showfaults);
       break;
-    case 4:
+    case 3:
       strcpy_P(v, label_menu_clearfaults);
       //v += strlen_P(label_menu_clearfaults);
       break;
-    case 5:
+    case 4:
       strcpy_P(v, label_menu_settime);
       break;
-    case 6:
+    case 5:
       strcpy_P(v, label_menu_setdate);
       break;
 
@@ -629,23 +627,23 @@ const char *el_strlist_getstr(uint8_t idx, uint8_t msg) {
         build_info_text_basic();
         m2.setRoot(&el_infopages_root);
         break;
+//      case 2:
+//        //label_menu_versioninfo
+//        build_versioninfo_text();
+//        m2.setRoot(&el_infopages_root);
+//        break;
       case 2:
-        //label_menu_versioninfo
-        build_info_text_versions();
-        m2.setRoot(&el_infopages_root);
-        break;
-      case 3:
         //label_menu_showfaults
         fn_faults();
         break;
-      case 4:
+      case 3:
         //label_menu_clearfaults
         fn_clear_faults();
         break;
-      case 5:
+      case 4:
         fn_settime();
         break;
-      case 6:
+      case 5:
         fn_setdate();
         break;
     }

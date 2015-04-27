@@ -19,14 +19,13 @@
 #define PROGMEMLABEL(label,value)  const char PROGMEM label[] = value; 
 
 //Version info page
-PROGMEMLABEL(label_WBUSVer,"WBus ver\n")
-PROGMEMLABEL(label_WBusCode,"\nWBus code\n")
-PROGMEMLABEL(label_DatasetIDNo,"\nDataset\n")
-PROGMEMLABEL(label_SoftwareIDNo,"SW\n")
-PROGMEMLABEL(label_DateOfManufactureControlUnit,"\nDate ctrl unit\n")
-PROGMEMLABEL(label_HWVersion,"HW ver\n")
-PROGMEMLABEL(label_SoftwareVersion,"SW ver\n")
-PROGMEMLABEL(label_SoftwareVersionEEPROM,"\nSW ver EEPROM\n")
+//PROGMEMLABEL(label_WBUSVer,"WBus ver\n")
+//PROGMEMLABEL(label_WBusCode,"\nWBus code\n")
+//PROGMEMLABEL(label_DatasetIDNo,"\nDataset\n")
+//PROGMEMLABEL(label_SoftwareIDNo,"SW\n")
+//PROGMEMLABEL(label_HWVersion,"HW ver\n")
+//PROGMEMLABEL(label_SoftwareVersion,"SW ver\n")
+//PROGMEMLABEL(label_SoftwareVersionEEPROM,"\nSW ver EEPROM\n")
 
 //Heater info page
 PROGMEMLABEL(label_DeviceName,"Name\n")
@@ -34,6 +33,7 @@ PROGMEMLABEL(label_DeviceIDNo,"\nDevice id\n")
 PROGMEMLABEL(label_DateOfManufactureHeater,"\nDate heater\n")
 PROGMEMLABEL(label_CustomerIdentificationNumber,"\nCust id\n")
 PROGMEMLABEL(label_SerialNumber,"\nSerial\n")
+PROGMEMLABEL(label_DateOfManufactureControlUnit,"\nDate ctrl unit\n")
 
 PROGMEMLABEL(label_Unknown,"? ")
 PROGMEMLABEL(label_Mon,"Mon ")
