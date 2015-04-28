@@ -52,21 +52,14 @@
 U8GLIB_PCD8544 u8g(10, 9 , 8);
 
 //Massive (!) buffer for scrolling text/string output
-char value[190];
+char value[200];
 
 //buffer for text output of date/time
 char textline1[15];
 char textline2[15];
 
-//uint8_t dt_day = 1;
-//uint8_t dt_month = 1;
-//uint8_t dt_year = 12;
-//uint8_t ti_hour = 1;
-//uint8_t ti_mins = 1;
-
 uint8_t total_lines1 = 0;
 uint8_t first_visible_line1 = 0;
-//uint8_t currentErrorOnScreen = 0;
 uint8_t updateDisplayCounter = 0;
 uint8_t total_menu_items = 7;
 
@@ -81,7 +74,6 @@ tmElements_t tm;
 
 
 //Display 84x48 pixels
-
 M2_SPACE(el_menu_space, "w1h2");
 
 /* DISPLAY FOR INFO PAGES */
@@ -91,12 +83,6 @@ M2_LIST(list_strlist) = { &el_labelptr, &el_vsb };
 M2_HLIST(el_strlist_hlist, NULL, list_strlist);
 M2_ALIGN(el_infopages_root, "w84w48", &el_strlist_hlist);
 
-/* FAULT DISPLAY*/
-//M2_INFO(el_labelptr2, "w76l5" , &first_visible_line1, &total_lines1, value, fn_shownextfault);
-//M2_LIST(list_strlist2) = { &el_labelptr2, &el_vsb };
-//M2_HLIST(el_strlist_hlist2, NULL, list_strlist2);
-//M2_ALIGN(top_nextfaulttopelement, "w84h48", &el_strlist_hlist2);
-
 /* CLOCK/IDLE page */
 M2_LABELFN(el_big_label_clock, "f8w64", label_footer);
 M2_LABELFN(el_big_label_date, "f8w64", label_footer2);
@@ -104,6 +90,39 @@ M2_BUTTON(el_button_clock_close, "f8w64", "Menu", fn_button_showhome);
 M2_LIST(list_clocklist) = {&el_big_label_clock, &el_menu_space, &el_menu_space, &el_big_label_date, &el_menu_space, &el_menu_space, &el_button_clock_close };
 M2_VLIST(vlist_clocklist, NULL, list_clocklist);
 M2_ALIGN(el_bigclock, NULL, &vlist_clocklist);
+
+
+/* SET DATE */
+//Date
+M2_U8NUM(el_dt_day, "c2", 1, 31, &tm.Day);
+M2_LABEL(el_dt_sep1, NULL, "/");
+M2_U8NUM(el_dt_month, "c2", 1, 12, &tm.Month);
+M2_LABEL(el_dt_sep2, NULL, "/20");
+M2_U8NUM(el_dt_year, "c2", 15, 35, &tm.Year);
+M2_LIST(list_date) = { &el_dt_day, &el_dt_sep1, &el_dt_month, &el_dt_sep2, &el_dt_year };
+M2_HLIST(el_date, NULL, list_date);
+//Time
+M2_U8NUM(el_ti_hour, "c2", 0, 23, &tm.Hour);
+M2_LABEL(el_ti_sep1, NULL, ":");
+M2_U8NUM(el_ti_mins, "c2", 0, 59, &tm.Minute);
+M2_LIST(list_time) = { &el_ti_hour, &el_ti_sep1, &el_ti_mins};
+M2_HLIST(el_time, NULL, list_time);
+//Buttons
+M2_BUTTON(el_dt_ok, NULL, "OK", fn_button_confirmdatetime);
+M2_BUTTON(el_dt_cancel, NULL, "CANCEL", fn_button_showhome);
+M2_LIST(list_dt_buttons) = { &el_date, &el_time, &el_dt_ok, &el_dt_cancel };
+//Vertical align/list
+M2_VLIST(el_top_dt2, NULL, list_dt_buttons);
+M2_ALIGN(el_top_dt, NULL, &el_top_dt2);
+
+
+/* DIALOG */
+M2_LABELFN(el_dialog_label, NULL, fn_value);
+M2_BUTTON(el_button_close_dialog, NULL, "Close", fn_button_showhome);
+M2_LIST(list_dialog) = { &el_dialog_label, &el_button_close_dialog };
+M2_VLIST(el_dialog_vlist, NULL, list_dialog);
+M2_ALIGN(top_dialog, NULL, &el_dialog_vlist);
+
 
 /* MAIN MENU */
 M2_STRLIST(el_strlist_menu, "l3w76" , &first_visible_line1, &total_menu_items, el_strlist_mainmenu);
@@ -118,42 +137,6 @@ M2_LIST(list_menu2) = { &el_menu_hlist, &el_menu_space, &el_footer_label, &el_fo
 M2_VLIST(el_menu_vlist, NULL, list_menu2);
 
 M2_ALIGN(top_buttonmenu, "-0|2w84h48", &el_menu_vlist);
-
-/* DIALOG */
-M2_LABELFN(el_dialog_label, NULL, fn_value);
-M2_BUTTON(el_button_close_dialog, NULL, "Close", fn_button_showhome);
-M2_LIST(list_dialog) = { &el_dialog_label, &el_button_close_dialog };
-M2_VLIST(el_dialog_vlist, NULL, list_dialog);
-M2_ALIGN(top_dialog, NULL, &el_dialog_vlist);
-
-/* SET DATE */
-
-//= Set date menu =
-M2_U8NUM(el_dt_day, "c2", 1, 31, &tm.Day);
-M2_LABEL(el_dt_sep1, NULL, "/");
-M2_U8NUM(el_dt_month, "c2", 1, 12, &tm.Month);
-M2_LABEL(el_dt_sep2, NULL, "/20");
-M2_U8NUM(el_dt_year, "c2", 15, 35, &tm.Year);
-
-M2_LIST(list_date) = { &el_dt_day, &el_dt_sep1, &el_dt_month, &el_dt_sep2, &el_dt_year };
-M2_HLIST(el_date, NULL, list_date);
-
-//= Set time menu =
-M2_U8NUM(el_ti_hour, "c2", 0, 23, &tm.Hour);
-M2_LABEL(el_ti_sep1, NULL, ":");
-M2_U8NUM(el_ti_mins, "c2", 0, 59, &tm.Minute);
-
-M2_LIST(list_time) = { &el_ti_hour, &el_ti_sep1, &el_ti_mins};
-M2_HLIST(el_time, NULL, list_time);
-
-M2_BUTTON(el_dt_ok, NULL, "OK", fn_button_confirmdatetime);
-M2_BUTTON(el_dt_cancel, NULL, "CANCEL", fn_button_showhome);
-
-M2_LIST(list_dt_buttons) = { &el_date, &el_time, &el_dt_ok, &el_dt_cancel };
-
-M2_VLIST(el_top_dt2, NULL, list_dt_buttons);
-M2_ALIGN(el_top_dt, NULL, &el_top_dt2);
-
 
 
 
