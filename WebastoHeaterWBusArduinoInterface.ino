@@ -30,11 +30,9 @@
 
 #include "utility.h"
 
-#include <Time.h>
-//#include <TimeAlarms.h>
-
 #include <Wire.h>
 #include <DS1307RTC.h>
+#include <Time.h>
 
 #include "constants.h"
 #include "wbus.h"
@@ -70,18 +68,16 @@ uint8_t total_lines1 = 0;
 uint8_t first_visible_line1 = 0;
 //uint8_t currentErrorOnScreen = 0;
 uint8_t updateDisplayCounter = 0;
-uint8_t total_menu_items = 6;
-
-unsigned char ErrorList[32];
+uint8_t total_menu_items = 7;
 
 unsigned long previousMillis;
 unsigned long currentMillis;
+unsigned long time_since_key_press = 0;
 
 bool updatedisplay;
 uint8_t footerToggle = 0;
 wb_sensor_t KeepAlive_wb_sensors;
 
-unsigned long time_since_key_press = 0;
 
 //Display 84x48 pixels
 
@@ -101,16 +97,16 @@ M2_ALIGN(el_infopages_root, "w84w48", &el_strlist_hlist);
 //M2_ALIGN(top_nextfaulttopelement, "w84h48", &el_strlist_hlist2);
 
 /* CLOCK/IDLE page */
-M2_LABELFN(el_big_label_clock, "f8w64", label_clock);
-M2_LABELFN(el_big_label_date, "w64f8", label_date);
-M2_BUTTON(el_button_clock_close, "w64f8", "Menu", fn_button_showhome);
+M2_LABELFN(el_big_label_clock, "f8w64", label_footer);
+M2_LABELFN(el_big_label_date, "f8w64", label_footer2);
+M2_BUTTON(el_button_clock_close, "f8w64", "Menu", fn_button_showhome);
 M2_LIST(list_clocklist) = {&el_big_label_clock, &el_menu_space, &el_menu_space, &el_big_label_date, &el_menu_space, &el_menu_space, &el_button_clock_close };
 M2_VLIST(vlist_clocklist, NULL, list_clocklist);
 M2_ALIGN(el_bigclock, NULL, &vlist_clocklist);
 
 /* MAIN MENU */
-M2_STRLIST(el_strlist_menu, "l4w76" , &first_visible_line1, &total_menu_items, el_strlist_getstr);
-M2_VSB(el_vsb_menu, "l4w4" , &first_visible_line1, &total_menu_items);
+M2_STRLIST(el_strlist_menu, "l3w76" , &first_visible_line1, &total_menu_items, el_strlist_getstr);
+M2_VSB(el_vsb_menu, "l3w4" , &first_visible_line1, &total_menu_items);
 M2_LIST(list_menu_strlist) = { &el_strlist_menu, &el_vsb_menu };
 M2_HLIST(el_menu_hlist, NULL, list_menu_strlist);
 
@@ -131,26 +127,15 @@ M2_ALIGN(top_dialog, NULL, &el_dialog_vlist);
 
 /* SET DATE */
 
-
 //= Set date menu =
 M2_U8NUM(el_dt_day, "c2", 1, 31, &dt_day);
 M2_LABEL(el_dt_sep1, NULL, "/");
 M2_U8NUM(el_dt_month, "c2", 1, 12, &dt_month);
 M2_LABEL(el_dt_sep2, NULL, "/20");
-M2_U8NUM(el_dt_year, "c2", 15, 99, &dt_year);
+M2_U8NUM(el_dt_year, "c2", 15, 35, &dt_year);
 
 M2_LIST(list_date) = { &el_dt_day, &el_dt_sep1, &el_dt_month, &el_dt_sep2, &el_dt_year };
 M2_HLIST(el_date, NULL, list_date);
-
-M2_BUTTON(el_dt_ok, NULL, "OK", fn_button_showhome);
-M2_LIST(list_dt_buttons) = { &el_dt_ok };
-M2_HLIST(el_dt_buttons, NULL, list_dt_buttons);
-
-M2_LIST(list_dt) = {&el_date, &el_dt_buttons };
-M2_VLIST(el_top_dt2, NULL, list_dt);
-M2_ALIGN(el_top_dt, NULL, &el_top_dt2);
-
-
 
 //= Set time menu =
 M2_U8NUM(el_ti_hour, "c2", 0, 23, &ti_hour);
@@ -160,27 +145,20 @@ M2_U8NUM(el_ti_mins, "c2", 0, 59, &ti_mins);
 M2_LIST(list_time) = { &el_ti_hour, &el_ti_sep1, &el_ti_mins};
 M2_HLIST(el_time, NULL, list_time);
 
-M2_BUTTON(el_ti_ok, NULL, "OK", fn_button_showhome);
-M2_LIST(list_ti_buttons) = {&el_ti_ok };
-M2_HLIST(el_ti_buttons, NULL, list_ti_buttons);
+M2_BUTTON(el_dt_ok, NULL, "OK", fn_button_confirmdatetime);
+M2_BUTTON(el_dt_cancel, NULL, "CANCEL", fn_button_showhome);
 
-M2_LIST(list_ti) = {&el_time, &el_ti_buttons };
-M2_VLIST(el_top_time2, NULL, list_ti);
-M2_ALIGN(el_top_time, NULL, &el_top_time2);
+M2_LIST(list_dt_buttons) = { &el_date, &el_time, &el_dt_ok, &el_dt_cancel };
+
+M2_VLIST(el_top_dt2, NULL, list_dt_buttons);
+M2_ALIGN(el_top_dt, NULL, &el_top_dt2);
+
+
 
 
 //U8
-//M2tk m2(&top_buttonmenu, m2_es_arduino_rotary_encoder , m2_eh_4bd, m2_gh_u8g_bf);
 M2tk m2(&el_bigclock, m2_es_arduino_rotary_encoder , m2_eh_4bd, m2_gh_u8g_bfs);
 
-const char *label_date(m2_rom_void_p element)
-{
-  return textline2;
-}
-const char *label_clock(m2_rom_void_p element)
-{
-  return textline1;
-}
 const char *label_footer(m2_rom_void_p element)
 {
   return textline1;
@@ -193,6 +171,7 @@ const char *fn_value(m2_rom_void_p element)
 {
   return value;
 }
+
 
 void build_info_text_basic()
 {
@@ -229,13 +208,9 @@ void build_info_text_basic()
     strcat_P(v, label_SerialNumber); v += strlen_P(label_SerialNumber);
     v = hexdump(v, wb_info.serial, 5, false);
 
-    //Debug
-    //v += sprintf(v, "%i", v - value);
-    //Ensure null terminate on string
   } else {
-    v = ShowError(v, err);
+    v = ShowError(err);
   }
-  //v[0] = 0;
 }
 
 void home_menu() {
@@ -249,11 +224,12 @@ void fn_button_showhome(m2_el_fnarg_p fnarg) {
 }
 
 
-
 void fn_faults() {
   clearBuffer();
   char* v = value;
   int err;
+
+  unsigned char ErrorList[32];
 
   //Ensure empty array to start with
   memset(ErrorList, 0, sizeof(ErrorList));
@@ -263,13 +239,7 @@ void fn_faults() {
   if (!err) {
 
     if (ErrorList[0] > 0) {
-      //currentErrorOnScreen = 0;
-      //v = faultHeaders(v);
-      //v = PopulateTextForFault(currentErrorOnScreen, v);
 
-      strcat_P(v, label_ErrorCount); v += strlen_P(label_ErrorCount);
-      v = i2str(ErrorList[0], v);
-      v++[0] = '\n';
 
       err_info_t err_info;
 
@@ -282,46 +252,48 @@ void fn_faults() {
       //  Operating state: Off state  4,0
       //  Voltage: 12.55V
       //  Operating hour counter: 5590:15 (h:m)
+      for (int errIndex = 0; errIndex < ErrorList[0]; errIndex++ ) {
 
-      for (int errIndex = 0; errIndex++; errIndex < ErrorList[0]) {
-
-        v = i2str(errIndex, v);
+        strcat_P(v, label_ErrorCount);
+        v += strlen_P(label_ErrorCount);
+        v = i2str(errIndex + 1, v);
         v++[0] = '\n';
-        
+
         unsigned char errCode = ErrorList[errIndex * 2 + 1];
 
         err = wbus_get_fault(errCode, &err_info);
 
-        if (!err) {                            
+        if (!err) {
           v++[0] = 'E';
           v++[0] = ':';
           v = PrintHexByte(v, err_info.code);
+          v++[0] = ' ';
 
           //01
           v++[0] = 'F';
           v++[0] = ':';
           v = PrintHexByte(v, err_info.flags);
+          v++[0] = ' ';
 
           //03
           v++[0] = 'C';
           v++[0] = ':';
-          strcat_P(v, label_Counter); v += strlen_P(label_Counter);
           v = i2str(err_info.counter, v);
 
           //04 00
-//          strcat_P(v, label_OperatingState); v += strlen_P(label_OperatingState);
-//          v = PrintHexByte(v, err_info.op_state[0]);
-//          v++[0] = '/';
-//          v = PrintHexByte(v, err_info.op_state[1]);
-//          v++[0] = '\n';
+          //          strcat_P(v, label_OperatingState); v += strlen_P(label_OperatingState);
+          //          v = PrintHexByte(v, err_info.op_state[0]);
+          //          v++[0] = '/';
+          //          v = PrintHexByte(v, err_info.op_state[1]);
+          //          v++[0] = '\n';
 
           //48
-//          strcat_P(v, label_Temperature); v += strlen_P(label_Temperature);
-//          v = i2str(BYTE2TEMP(err_info.temp), v);
+          //          strcat_P(v, label_Temperature); v += strlen_P(label_Temperature);
+          //          v = i2str(BYTE2TEMP(err_info.temp), v);
 
           //31 06
-//          strcat_P(v, label_SupplyVoltage); v += strlen_P(label_SupplyVoltage);
-//          v = i2str( twobyte2word(err_info.volt), v);
+          //          strcat_P(v, label_SupplyVoltage); v += strlen_P(label_SupplyVoltage);
+          //          v = i2str( twobyte2word(err_info.volt), v);
 
           //5586:31 (h:m) = 15 d2 1f
           strcat_P(v, label_OperatingTime); v += strlen_P(label_OperatingTime);
@@ -329,11 +301,10 @@ void fn_faults() {
           v++[0] = 'h';
           v = i2str( err_info.minute, v);
           v++[0] = 'm';
-          
           v++[0] = '\n';
-          
+
         } else {
-          v = ShowError(v, err);
+          v = ShowError(err);
         }
       }
 
@@ -345,7 +316,7 @@ void fn_faults() {
 
   } else {
     //WBUS error
-    v = ShowError(v, err);
+    v = ShowError(err);
   }
 
   //Ensure null terminate on string
@@ -365,20 +336,19 @@ void fn_clear_faults() {
     strcpy_P(v, label_FaultsCleared);
   } else {
     //WBUS error
-    v = ShowError(v, err);
+    v = ShowError(err);
   }
 
   m2.setRoot(&top_dialog);
 }
 
-
 void clearBuffer() {
   memset(value, 0, sizeof(value));
 }
 
-char* ShowError(char* v, uint8_t errCode) {
+char* ShowError(uint8_t errCode) {
   clearBuffer();
-  v = value;
+  char* v = value;
   strcat_P(v, label_wbusError); v += strlen_P(label_wbusError);
   v = PrintHexByte(v, errCode);
   return v;
@@ -414,70 +384,26 @@ void updateClockString() {
 
     /* Now the date */
     v = textline2;
+/*
     if (tm.Wday == 1) {
       strcat_P(v, label_Sun);
     } else {
       strcpy_P(v, (char*)pgm_read_word(&(weekdays_table[tm.Wday])));
     }
     v += 4;
+*/
 
     v = i2str_zeropad( tm.Day, v);
     v++[0] = '-';
     v = i2str_zeropad( tm.Month, v);
     v++[0] = '-';
-    v = i2str_zeropad( 1970 + tm.Year - 2000, v);
+    v = i2str_zeropad( tmYearToCalendar(tm.Year), v);
 
     //Terminator
-    v++[0] = 0;
+    v[0] = 0;
   }
 }
 
-void setup() {
-  getTimeFunction();
-  setSyncProvider(getTimeFunction);
-  setSyncInterval(600);  //10 minutes
-
-  //  Alarm.timerRepeat(1, Repeats);            // timer for every 15 seconds
-
-  // put your setup code here, to run once:
-  /* connect u8glib with m2tklib */
-  m2_SetU8g(u8g.getU8g(), m2_u8g_box_icon);
-
-  //m2_SetU8gAdditionalTextXBorder(2);
-  //m2_SetU8gAdditionalReadOnlyXBorder(2);
-
-  /* assign u8g font to index 0 */
-
-  //m2.setFont(0,  u8g_font_4x6r);
-
-  //6 pixel fonts are best for small screen
-  //m2.setFont(0,  u8g_font_5x7r);
-  m2.setFont(0,  u8g_font_5x8r);  //31208
-
-  //7 pixel font
-  //m2.setFont(0, u8g_font_lucasfont_alternater);  //332 bytes larger than u8g_font_5x8r
-
-  //Large clock font - numbers only
-  //m2.setFont(1, u8g_font_helvB14n);
-
-  //m2_SetU8gToggleFontIcon(u8g_font_m2icon_9, active_encoding, inactive_encoding);
-  //m2_SetU8gRadioFontIcon(u8g_font_m2icon_9, active_encoding, inactive_encoding);
-
-  m2.setPin(M2_KEY_SELECT, uiKeySelectPin);
-  //m2.setPin(M2_KEY_NEXT, uiKeyNextPin);
-  //m2.setPin(M2_KEY_PREV, uiKeyPrevPin);
-
-  m2.setPin(M2_KEY_ROT_ENC_A, uiKeyNextPin);
-  m2.setPin(M2_KEY_ROT_ENC_B, uiKeyPrevPin);
-
-  wbus_init();
-
-  //Return to top home menu
-  //m2.setRoot(&top_buttonmenu);
-
-  m2.setRoot(&el_bigclock);
-
-}
 
 const char *el_strlist_getstr(uint8_t idx, uint8_t msg) {
   char *v = value;
@@ -487,22 +413,24 @@ const char *el_strlist_getstr(uint8_t idx, uint8_t msg) {
     case 0:
       strcpy_P(v, label_menu_shheaton);
       break;
-    case 1 :
+    case 1:
+      strcpy_P(v, label_menu_shheatoff);
+      break;
+    case 2 :
       strcpy_P(v, label_menu_heaterinfo);
       break;
-    case 2:
+    case 3:
       strcpy_P(v, label_menu_showfaults);
       break;
-    case 3:
+    case 4:
       strcpy_P(v, label_menu_clearfaults);
       break;
-    case 4:
-      strcpy_P(v, label_menu_settime);
-      break;
     case 5:
-      strcpy_P(v, label_menu_setdate);
+      strcpy_P(v, label_menu_setdatetime);
       break;
-
+    case 6:
+      strcpy_P(v, label_menu_fuelprime);
+      break;
     default:
       //Null terminate string, just in case
       v[0] = 0;
@@ -515,65 +443,96 @@ const char *el_strlist_getstr(uint8_t idx, uint8_t msg) {
     {
       case 0:
         //Switch Supplimental heater ON
-        strcpy_P(v, label_shheaterswitchedon);
-        wbus_turnOn(WBUS_PH,60);
+        strcpy_P(v, label_shheater);
+        v += strlen_P(label_shheater);
+        strcpy_P(v, label_on);
+        wbus_turnOn(WBUS_PH, 60);
         m2.setRoot(&top_dialog);
         break;
-      case 1 :
+
+      case 1:
+        //Switch Supplimental heater OFF
+        strcpy_P(v, label_shheater);
+        v += strlen_P(label_shheater);
+        strcpy_P(v, label_off);
+        wbus_turnOff();
+        m2.setRoot(&top_dialog);
+        break;
+
+      case 2 :
         //Basic heater info
         build_info_text_basic();
         m2.setRoot(&el_infopages_root);
         break;
-      case 2:
+
+      case 3:
         //label_menu_showfaults
         fn_faults();
         break;
-      case 3:
+
+      case 4:
         //label_menu_clearfaults
         fn_clear_faults();
         break;
-      case 4:
-        fn_settime();
-        break;
+
       case 5:
-        fn_setdate();
+        fn_showdatetime();
+        break;
+
+      case 6:
+        //Start fuel prime
+        strcpy_P(v, label_fuelprime);
+        wbus_fuelPrime(10);
+        m2.setRoot(&top_dialog);
         break;
     }
-
   }
 
   return value;
 }
 
 
-void fn_settime() {
+
+void fn_showdatetime() {
   tmElements_t tm;
   breakTime(getTimeFunction(), tm);
 
   ti_hour = tm.Hour;
   ti_mins = tm.Minute;
 
-  m2.setRoot(&el_top_time);
-}
-
-void fn_setdate() {
-  tmElements_t tm;
-  breakTime(getTimeFunction(), tm);
-
   dt_day = tm.Day;
   dt_month = tm.Month;
-  dt_year = 1970 + tm.Year - 2000;
+  dt_year = tmYearToY2k(tm.Year);
 
   m2.setRoot(&el_top_dt);
 }
 
+
+void fn_button_confirmdatetime(m2_el_fnarg_p fnarg) {
+  tmElements_t tm;
+
+  tm.Hour = ti_hour;
+  tm.Minute = ti_mins;
+  tm.Second = 0;
+
+  tm.Day = dt_day;
+  tm.Month = dt_month;
+  tm.Year = y2kYearToTm(dt_year);
+
+  //Set the DS1307 RTC chip
+  RTC.write(tm);
+
+  home_menu();
+}
+
+
 void keepAlive() {
-  //The heater units controller appears to "sleep" after a few seconds of inactivity
-  //so keep pestering it to ensure it keeps awake.
+  //The heater units controller appears to "sleep" after a few seconds of inactivity so keep pestering it to ensure it keeps awake.
   currentMillis = millis();
 
   //Only need to communicate every few seconds
   if ((currentMillis - previousMillis) > 1700) {
+
     previousMillis = currentMillis;
 
     //Query heater every few seconds to keep it alive
@@ -595,8 +554,8 @@ void keepAlive() {
       memset(textline1, 0, sizeof(textline1));
       memset(textline2, 0, sizeof(textline2));
 
-      //Update every 5 refreshes (about 8 seconds)
-      updateDisplayCounter = 4 + 1;
+      //Update every 4 refreshes (about 8 seconds)
+      updateDisplayCounter = 3 + 1;
 
       char* v = textline1;
 
@@ -604,61 +563,71 @@ void keepAlive() {
         //What to do with errors?
         //Have to use textline2 as we dont have full font for clock display
         v = textline2;
-        strcat_P(v, label_wbusError);
-        v += strlen_P(label_wbusError);
+        strcat_P(v, label_wbusError); v += strlen_P(label_wbusError);
         v = PrintHexByte(v, err);
       } else {
 
         if (m2.getRoot() == &el_bigclock) {
           //Its the idle clock menu thats visible
           updateClockString();
+
         } else if (m2.getRoot() == &top_buttonmenu) {
           //Must be the menu, switch text in a cycle
 
           switch (footerToggle) {
             case 0:
+
               //QUERY_STATE results
-              strcat_P(v, label_OP); v += strlen_P(label_OP);
+              //Op:
+              v++[0] = 'O';
+              v++[0] = 'p';
+              v++[0] = ':';
               v = PrintHexByte(v, KeepAlive_wb_sensors.value[OP_STATE]);
-              strcat_P(v, label_N); v += strlen_P(label_N);
+
+              //OP_STATE value maps to the WB_STATE_ values, for instance 0x04 = WB_STATE_OFF
+
+              v++[0] = ' ';
+              v++[0] = 'N';
+              v++[0] = ':';
               v = i2str( KeepAlive_wb_sensors.value[OP_STATE_N], v);
-              //v[0] = 0;
+              v[0] = 0;
 
               v = textline2;
-
               strcat_P(v, label_Dev); v += strlen_P(label_Dev);
               v = PrintHexByte(v, KeepAlive_wb_sensors.value[DEV_STATE]);
-              //v++[0] = 0;
+              v[0] = 0;
 
               break;
 
             case 1:
               //QUERY_SENSORS results
               //Temperature
-              v[0] = 'T'; v++;
+              v++[0] = 't';
               v = i2str( BYTE2TEMP(KeepAlive_wb_sensors.value[SEN_TEMP]), v);
 
               //SupplyVoltage
-              v[0] = ' '; v++;
-              v[0] = 'V'; v++;
+              v++[0] = ' ';
+              v++[0] = 'v';
               v = i2str( twobyte2word(&KeepAlive_wb_sensors.value[SEN_VOLT]), v);
-              //v[0] = 0;
+              v[0] = 0;
 
+              //Change to second line
               v = textline2;
 
               //Flame detect
-              v[0] = 'F'; v++;
+              v++[0] = 'f';
               v = i2str( KeepAlive_wb_sensors.value[SEN_FD], v);
 
               //Heat energy
-              v[0] = ' '; v++;
-              v[0] = 'H'; v++;
+              v++[0] = ' ';
+              v++[0] = 'h';
               v = i2str( twobyte2word(&KeepAlive_wb_sensors.value[SEN_HE]), v);
 
               //glow plug resistance in mili Ohm
-              v[0] = ' '; v++;
-              v[0] = 'G'; v++;
+              v++[0] = ' ';
+              v++[0] = 'g';
               v = i2str( KeepAlive_wb_sensors.value[SEN_GPR], v);
+              v[0] = 0;
               break;
 
             case 2:
@@ -688,8 +657,8 @@ void loop() {
   if (m2.handleKey() | updatedisplay) {
 
     if (!updatedisplay) {
-      //Key was pressed so reset clock timer to now+45 seconds
-      time_since_key_press = millis() + 45000;
+      //Key was pressed so reset clock timer to 45 seconds
+      time_since_key_press = millis() + (45000);
     }
 
     updatedisplay = false;
@@ -705,3 +674,47 @@ void loop() {
     m2.setRoot(&el_bigclock);
   }
 }
+
+void setup() {
+  getTimeFunction();
+  setSyncProvider(getTimeFunction);
+  setSyncInterval(600);  //10 minutes
+
+  // put your setup code here, to run once:
+  /* connect u8glib with m2tklib */
+  m2_SetU8g(u8g.getU8g(), m2_u8g_box_icon);
+
+  //m2_SetU8gAdditionalTextXBorder(2);
+  //m2_SetU8gAdditionalReadOnlyXBorder(2);
+
+  /* assign u8g font to index 0 */
+
+  //6 pixel fonts are best for small screen
+
+  //m2.setFont(0,  u8g_font_chikitar);
+  //m2.setFont(0,  u8g_font_5x7r);
+  m2.setFont(0,  u8g_font_5x8r);
+  //m2.setFont(0,  u8g_font_courR08r);
+  //m2.setFont(0,  u8g_font_profont10r);
+
+  //7 pixel font
+  //m2.setFont(0, u8g_font_lucasfont_alternater);  //332 bytes larger than u8g_font_5x8r
+
+  //Large clock font - numbers only
+  //m2.setFont(1, u8g_font_helvB14n);
+
+  //m2_SetU8gToggleFontIcon(u8g_font_m2icon_9, active_encoding, inactive_encoding);
+  //m2_SetU8gRadioFontIcon(u8g_font_m2icon_9, active_encoding, inactive_encoding);
+
+  m2.setPin(M2_KEY_SELECT, uiKeySelectPin);
+  //m2.setPin(M2_KEY_NEXT, uiKeyNextPin);
+  //m2.setPin(M2_KEY_PREV, uiKeyPrevPin);
+
+  m2.setPin(M2_KEY_ROT_ENC_A, uiKeyNextPin);
+  m2.setPin(M2_KEY_ROT_ENC_B, uiKeyPrevPin);
+
+  wbus_init();
+
+  m2.setRoot(&el_bigclock);
+}
+

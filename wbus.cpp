@@ -553,3 +553,18 @@ int wbus_turnOff()
   return err;
 }
 
+/*
+ * Fuel Priming
+ */
+int wbus_fuelPrime( unsigned char time)
+{
+  unsigned char tmp[5];
+  int len;
+    
+  tmp[0] = 0x03;
+  tmp[1] = 0x00;
+  tmp[2] = time>>1;
+  len = 3;
+  
+  return wbus_io(WBUS_CMD_X, tmp, NULL, 0, tmp, &len, 0);
+}

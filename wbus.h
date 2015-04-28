@@ -102,4 +102,4 @@ int wbus_turnOn(WBUS_TURNON mode, unsigned char time);
 int wbus_turnOff();
 /* Check or keep alive heating process. mode is the argument that was passed as to wbus_turnOn() */
 int wbus_check(WBUS_TURNON mode);
-
+int wbus_fuelPrime( unsigned char time);

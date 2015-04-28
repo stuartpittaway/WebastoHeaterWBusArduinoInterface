@@ -35,46 +35,48 @@ PROGMEMLABEL(label_CustomerIdentificationNumber,"\nCust id\n")
 PROGMEMLABEL(label_SerialNumber,"\nSerial\n")
 PROGMEMLABEL(label_DateOfManufactureControlUnit,"\nDate ctrl unit\n")
 
-PROGMEMLABEL(label_Unknown,"? ")
-PROGMEMLABEL(label_Mon,"Mon ")
-PROGMEMLABEL(label_Tue,"Tue ")
-PROGMEMLABEL(label_Wed,"Wed ")
-PROGMEMLABEL(label_Thu,"Thu ")
-PROGMEMLABEL(label_Fri,"Fri ")
-PROGMEMLABEL(label_Sat,"Sat ")
-PROGMEMLABEL(label_Sun,"Sun ")
+//PROGMEMLABEL(label_Unknown,"? ")
+//PROGMEMLABEL(label_Mon,"Mon ")
+//PROGMEMLABEL(label_Tue,"Tue ")
+//PROGMEMLABEL(label_Wed,"Wed ")
+//PROGMEMLABEL(label_Thu,"Thu ")
+//PROGMEMLABEL(label_Fri,"Fri ")
+//PROGMEMLABEL(label_Sat,"Sat ")
+//PROGMEMLABEL(label_Sun,"Sun ")
+//const char* const weekdays_table[] PROGMEM = {label_Unknown, label_Mon, label_Tue, label_Wed, label_Thu, label_Fri,label_Sat  };
 
-const char* const weekdays_table[] PROGMEM = {label_Unknown, label_Mon, label_Tue, label_Wed, label_Thu, label_Fri,label_Sat  };
-
-PROGMEMLABEL(label_ErrorCount,"Faults:")
+PROGMEMLABEL(label_ErrorCount,"Fault:")
 
 /* Fault screen */
-PROGMEMLABEL(label_Code,"Code:")
-PROGMEMLABEL(label_Flag,"\nFlag:")
-PROGMEMLABEL(label_Counter,"\nCount:")
-PROGMEMLABEL(label_OperatingState,"\nOp state:")
-PROGMEMLABEL(label_Temperature,"Temp:")
-PROGMEMLABEL(label_SupplyVoltage," C\nSupply V:")
-PROGMEMLABEL(label_OperatingTime,"\nOp time:")
+//PROGMEMLABEL(label_Code,"Code:")
+//PROGMEMLABEL(label_Flag,"\nFlag:")
+//PROGMEMLABEL(label_Counter,"\nC:")
+//PROGMEMLABEL(label_OperatingState,"\nOp state:")
+//PROGMEMLABEL(label_Temperature,"Temp:")
+//PROGMEMLABEL(label_SupplyVoltage," C\nSupply V:")
+PROGMEMLABEL(label_OperatingTime,"\nTime:")
 
 PROGMEMLABEL(label_wbusError,"Err 0x")
 
 PROGMEMLABEL(label_NoFaultsFound,"No fault found")
 PROGMEMLABEL(label_FaultsCleared,"Faults cleared")
-PROGMEMLABEL(label_NoMoreFaultsFound,"No more faults")
+//PROGMEMLABEL(label_NoMoreFaultsFound,"No more faults")
 
-PROGMEMLABEL(label_OP, "Op:")
-PROGMEMLABEL(label_N, " N:")
 PROGMEMLABEL(label_Dev, "Dev:")
 
 /* Menu Options */
 PROGMEMLABEL(label_menu_shheaton, "SH Heat On")
+PROGMEMLABEL(label_menu_shheatoff, "SH Heat Off")
 PROGMEMLABEL(label_menu_heaterinfo, "Heater info")
 PROGMEMLABEL(label_menu_versioninfo, "Version info")
 PROGMEMLABEL(label_menu_showfaults, "Show faults")
 PROGMEMLABEL(label_menu_clearfaults, "Clear faults")
-PROGMEMLABEL(label_menu_settime, "Set time")
-PROGMEMLABEL(label_menu_setdate, "Set date")
+PROGMEMLABEL(label_menu_setdatetime, "Set date/time")
+PROGMEMLABEL(label_menu_fuelprime, "Fuel prime")
 
-PROGMEMLABEL(label_shheaterswitchedon, "SH heater On")
+PROGMEMLABEL(label_shheater, "SH heater ")
+PROGMEMLABEL(label_on, "On")
+PROGMEMLABEL(label_off, "Off")
+
+PROGMEMLABEL(label_fuelprime, "Prime started")
 
