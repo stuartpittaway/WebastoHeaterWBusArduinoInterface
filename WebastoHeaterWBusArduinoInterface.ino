@@ -58,11 +58,11 @@ char value[190];
 char textline1[15];
 char textline2[15];
 
-uint8_t dt_day = 1;
-uint8_t dt_month = 1;
-uint8_t dt_year = 12;
-uint8_t ti_hour = 1;
-uint8_t ti_mins = 1;
+//uint8_t dt_day = 1;
+//uint8_t dt_month = 1;
+//uint8_t dt_year = 12;
+//uint8_t ti_hour = 1;
+//uint8_t ti_mins = 1;
 
 uint8_t total_lines1 = 0;
 uint8_t first_visible_line1 = 0;
@@ -77,6 +77,7 @@ unsigned long time_since_key_press = 0;
 bool updatedisplay;
 uint8_t footerToggle = 0;
 wb_sensor_t KeepAlive_wb_sensors;
+tmElements_t tm;
 
 
 //Display 84x48 pixels
@@ -105,7 +106,7 @@ M2_VLIST(vlist_clocklist, NULL, list_clocklist);
 M2_ALIGN(el_bigclock, NULL, &vlist_clocklist);
 
 /* MAIN MENU */
-M2_STRLIST(el_strlist_menu, "l3w76" , &first_visible_line1, &total_menu_items, el_strlist_getstr);
+M2_STRLIST(el_strlist_menu, "l3w76" , &first_visible_line1, &total_menu_items, el_strlist_mainmenu);
 M2_VSB(el_vsb_menu, "l3w4" , &first_visible_line1, &total_menu_items);
 M2_LIST(list_menu_strlist) = { &el_strlist_menu, &el_vsb_menu };
 M2_HLIST(el_menu_hlist, NULL, list_menu_strlist);
@@ -128,19 +129,19 @@ M2_ALIGN(top_dialog, NULL, &el_dialog_vlist);
 /* SET DATE */
 
 //= Set date menu =
-M2_U8NUM(el_dt_day, "c2", 1, 31, &dt_day);
+M2_U8NUM(el_dt_day, "c2", 1, 31, &tm.Day);
 M2_LABEL(el_dt_sep1, NULL, "/");
-M2_U8NUM(el_dt_month, "c2", 1, 12, &dt_month);
+M2_U8NUM(el_dt_month, "c2", 1, 12, &tm.Month);
 M2_LABEL(el_dt_sep2, NULL, "/20");
-M2_U8NUM(el_dt_year, "c2", 15, 35, &dt_year);
+M2_U8NUM(el_dt_year, "c2", 15, 35, &tm.Year);
 
 M2_LIST(list_date) = { &el_dt_day, &el_dt_sep1, &el_dt_month, &el_dt_sep2, &el_dt_year };
 M2_HLIST(el_date, NULL, list_date);
 
 //= Set time menu =
-M2_U8NUM(el_ti_hour, "c2", 0, 23, &ti_hour);
+M2_U8NUM(el_ti_hour, "c2", 0, 23, &tm.Hour);
 M2_LABEL(el_ti_sep1, NULL, ":");
-M2_U8NUM(el_ti_mins, "c2", 0, 59, &ti_mins);
+M2_U8NUM(el_ti_mins, "c2", 0, 59, &tm.Minute);
 
 M2_LIST(list_time) = { &el_ti_hour, &el_ti_sep1, &el_ti_mins};
 M2_HLIST(el_time, NULL, list_time);
@@ -326,7 +327,7 @@ void fn_faults() {
 }
 
 
-void fn_clear_faults() {
+inline void fn_clear_faults() {
   clearBuffer();
   char* v = value;
 
@@ -354,17 +355,15 @@ char* ShowError(uint8_t errCode) {
   return v;
 }
 
-
-
 unsigned long getTimeFunction() {
   tmElements_t tm;
 
   if (RTC.read(tm)) {
     return makeTime(tm);
-  }
+  }   
 
   //Error so just return what we already have
-  else return now();
+  return now();
 }
 
 
@@ -372,7 +371,6 @@ void updateClockString() {
   if (timeStatus() != timeNotSet) {
     tmElements_t tm;
     breakTime(now(), tm);
-
 
     char* v = textline1;
     v = i2str_zeropad( tm.Hour, v);
@@ -405,8 +403,9 @@ void updateClockString() {
 }
 
 
-const char *el_strlist_getstr(uint8_t idx, uint8_t msg) {
+const char *el_strlist_mainmenu(uint8_t idx, uint8_t msg) {
   char *v = value;
+  v[0] = 0;
 
   switch (idx)
   {
@@ -431,9 +430,6 @@ const char *el_strlist_getstr(uint8_t idx, uint8_t msg) {
     case 6:
       strcpy_P(v, label_menu_fuelprime);
       break;
-    default:
-      //Null terminate string, just in case
-      v[0] = 0;
   };
 
   if ( msg == M2_STRLIST_MSG_SELECT ) {
@@ -476,7 +472,7 @@ const char *el_strlist_getstr(uint8_t idx, uint8_t msg) {
         break;
 
       case 5:
-        fn_showdatetime();
+        fn_begin_set_date_time();
         break;
 
       case 6:
@@ -491,37 +487,16 @@ const char *el_strlist_getstr(uint8_t idx, uint8_t msg) {
   return value;
 }
 
-
-
-void fn_showdatetime() {
-  tmElements_t tm;
+inline void fn_begin_set_date_time() {
   breakTime(getTimeFunction(), tm);
-
-  ti_hour = tm.Hour;
-  ti_mins = tm.Minute;
-
-  dt_day = tm.Day;
-  dt_month = tm.Month;
-  dt_year = tmYearToY2k(tm.Year);
-
+  tm.Year = tmYearToY2k(tm.Year);
   m2.setRoot(&el_top_dt);
 }
 
-
-void fn_button_confirmdatetime(m2_el_fnarg_p fnarg) {
-  tmElements_t tm;
-
-  tm.Hour = ti_hour;
-  tm.Minute = ti_mins;
-  tm.Second = 0;
-
-  tm.Day = dt_day;
-  tm.Month = dt_month;
-  tm.Year = y2kYearToTm(dt_year);
-
+inline void fn_button_confirmdatetime(m2_el_fnarg_p fnarg) {
+  tm.Year = y2kYearToTm(tm.Year);
   //Set the DS1307 RTC chip
   RTC.write(tm);
-
   home_menu();
 }
 
