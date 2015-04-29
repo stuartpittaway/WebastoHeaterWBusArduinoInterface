@@ -65,8 +65,8 @@ PROGMEMLABEL(label_FaultsCleared,"Faults cleared")
 PROGMEMLABEL(label_Dev, "Dev:")
 
 /* Menu Options */
-PROGMEMLABEL(label_menu_shheaton, "SH Heat On")
-PROGMEMLABEL(label_menu_shheatoff, "SH Heat Off")
+PROGMEMLABEL(label_menu_shheaton, "Heat On")
+PROGMEMLABEL(label_menu_shheatoff, "Heat Off")
 PROGMEMLABEL(label_menu_heaterinfo, "Heater info")
 PROGMEMLABEL(label_menu_versioninfo, "Version info")
 PROGMEMLABEL(label_menu_showfaults, "Show faults")
@@ -74,9 +74,9 @@ PROGMEMLABEL(label_menu_clearfaults, "Clear faults")
 PROGMEMLABEL(label_menu_setdatetime, "Set date/time")
 PROGMEMLABEL(label_menu_fuelprime, "Fuel prime")
 
-PROGMEMLABEL(label_shheater, "SH heater ")
-PROGMEMLABEL(label_on, "On")
-PROGMEMLABEL(label_off, "Off")
+//PROGMEMLABEL(label_shheater, "Heat ")
+//PROGMEMLABEL(label_on, "On")
+//PROGMEMLABEL(label_off, "Off")
 
 PROGMEMLABEL(label_fuelprime, "Prime started")
 

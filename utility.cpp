@@ -32,7 +32,6 @@ char *i2str_zeropad(int i, char *buf) {
   return i2str(i, buf);
 }
 
-
 inline void WORDSWAP(unsigned char *out, unsigned char *in)
 {
   /* No pointer tricks, to avoid alignment problems */
