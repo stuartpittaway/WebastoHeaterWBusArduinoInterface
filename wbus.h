@@ -62,6 +62,8 @@ typedef err_info_t *HANDLE_ERRINFO;
 
 int wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx);
 void wbus_init();
+
+
 //int wbus_get_version_wbinfo(HANDLE_VERSION_WBINFO i);
 int wbus_get_basic_info(HANDLE_BASIC_WBINFO i);
 
@@ -74,5 +76,4 @@ int wbus_turnOff();
 /* Check or keep alive heating process. mode is the argument that was passed as to wbus_turnOn() */
 int wbus_check(unsigned char mode);
 int wbus_fuelPrime( unsigned char time);
-
 

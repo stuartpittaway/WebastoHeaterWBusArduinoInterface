@@ -29,6 +29,7 @@
   20150501 Compile size Arduino 1.6.1, 30784 bytes, 1235 RAM.
   20150501 Added copy_string function to reduce code size. Compile size Arduino 1.6.1, 30752 bytes, 1235 RAM.
   20150501 Compile size Arduino 1.6.1, 30718 bytes, 1233 RAM.
+  20150501 Compile size Arduino 1.6.1, 30538 bytes, 1240 RAM. Change wbus to use shared buffer
 */
 
 // __TIME__ __DATE__
@@ -380,7 +381,6 @@ void updateClockString() {
     tmElements_t tm;
     breakTime(now(), tm);
 
-
     char* v = clocktext;
 
     /* Now the date */
@@ -400,9 +400,7 @@ void updateClockString() {
     *v++ = '/';
     v = i2str_zeropad( tmYearToCalendar(tm.Year) - 2000, v);
 
-    *v++ = ' ';
-    *v++ = ' ';
-    *v++ = ' ';
+    v = copy_string(v, label_threespaces);
 
     v = i2str_zeropad( tm.Hour, v);
     *v++ = ':';
@@ -481,12 +479,10 @@ const char *el_strlist_mainmenu(uint8_t idx, uint8_t msg) {
         break;
 
       case 3:
-        //label_menu_showfaults
         fn_faults();
         break;
 
       case 4:
-        //label_menu_clearfaults
         fn_clear_faults();
         break;
 
@@ -547,8 +543,8 @@ void keepAlive() {
       memset(textline1, 0, sizeof(textline1));
       memset(textline2, 0, sizeof(textline2));
 
-      //Update every 4 refreshes (about 8 seconds)
-      updateDisplayCounter = 3 + 1;
+      //Update every 3 refreshes (about 8 seconds)
+      updateDisplayCounter = 2 + 1;
 
       char* v = textline1;
 
@@ -562,7 +558,6 @@ void keepAlive() {
         //strcat_P(v, label_wbusError); v += strlen_P(label_wbusError);
         v = PrintHexByte(v, err);
       } else {
-
 
         if (m2.getRoot() == &top_buttonmenu) {
           //Must be the menu, switch text in a cycle
@@ -673,7 +668,6 @@ void backlightOff() {
 }
 
 void setup() {
-
   pinMode(lcdBacklight, OUTPUT);
 
   backlightOn();

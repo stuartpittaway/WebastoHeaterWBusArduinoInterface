@@ -6,8 +6,9 @@
  */
 
 #include "wbus.h"
-#include "wbus_const.h"
 
+unsigned char cmdbuf[5];
+int len;
 
 //uint16_t CommunicationsErrorCount=0;
 
@@ -50,11 +51,8 @@ unsigned char checksum(unsigned char *buf, unsigned char len, unsigned char chk)
 }
 
 
-
-
 /**
  * Send request to heater and one or two consecutive buffers.
- * \param wbus wbus handle
  * \param cmd wbus command to be sent
  * \param data pointer for first buffer.
  * \param len length of first data buffer.
@@ -63,11 +61,11 @@ unsigned char checksum(unsigned char *buf, unsigned char len, unsigned char chk)
  * \return 0 if success, 1 on error.
  */
 int wbus_msg_send( uint8_t addr,
-                         uint8_t cmd,
-                         uint8_t *data,
-                         int len,
-                         uint8_t *data2,
-                         int len2)
+                   uint8_t cmd,
+                   uint8_t *data,
+                   int len,
+                   uint8_t *data2,
+                   int len2)
 {
 
   uint8_t bytes, chksum;
@@ -102,24 +100,23 @@ int wbus_msg_send( uint8_t addr,
   }
 
   /* Read and check echoed data */
-  {
-    int i;
+  int i;
 
-    for (i = 0; i < len; i++) {
-      bytes = Serial.readBytes((char*)buf, 1);
-      if (bytes != 1 || buf[0] != data[i]) {
-        //PRINTF("wbus_msg_send() K-Line error. %d < 1 (data2)\n", bytes);
-    //CommunicationsErrorCount++;
-        return -1;
-      }
+  for (i = 0; i < len; i++) {
+    bytes = Serial.readBytes((char*)buf, 1);
+    if (bytes != 1 || buf[0] != data[i]) {
+      //PRINTF("wbus_msg_send() K-Line error. %d < 1 (data2)\n", bytes);
+      //CommunicationsErrorCount++;
+      return -1;
     }
-    for (i = 0; i < len2; i++) {
-      bytes = Serial.readBytes((char*)buf, 1);
-      if (bytes != 1 || buf[0] != data2[i]) {
-        //PRINTF("wbus_msg_send() K-Line error. %d < 1 (data2)\n", bytes);
-    //CommunicationsErrorCount++;
-        return -1;
-      }
+  }
+
+  for (i = 0; i < len2; i++) {
+    bytes = Serial.readBytes((char*)buf, 1);
+    if (bytes != 1 || buf[0] != data2[i]) {
+      //PRINTF("wbus_msg_send() K-Line error. %d < 1 (data2)\n", bytes);
+      //CommunicationsErrorCount++;
+      return -1;
     }
   }
 
@@ -154,7 +151,7 @@ int wbus_msg_recv(uint8_t *addr,  uint8_t *cmd,  uint8_t *data,  int *dlen,  int
       //if (*cmd != 0) {
       //PRINTF("wbus_msg_recv(): timeout\n");
       //}
-    //CommunicationsErrorCount++;
+      //CommunicationsErrorCount++;
       return -1;
     }
 
@@ -216,13 +213,11 @@ int wbus_msg_recv(uint8_t *addr,  uint8_t *cmd,  uint8_t *data,  int *dlen,  int
   //rs232_read(wbus->rs232, buf, 1);
   Serial.readBytes((char*)buf, 1);
 
-  
   if (*buf != chksum) {
-//   PRINTF("wbus_msg_recv() Checksum error\n");
-      //CommunicationsErrorCount++;
- return -1;
-   }
-  
+    //   PRINTF("wbus_msg_recv() Checksum error\n");
+    //CommunicationsErrorCount++;
+    return -1;
+  }
 
   return 0;
 }
@@ -230,7 +225,7 @@ int wbus_msg_recv(uint8_t *addr,  uint8_t *cmd,  uint8_t *data,  int *dlen,  int
 /*
  * Send a client W-Bus request and read answer from Heater.
  */
-int wbus_io( uint8_t cmd,uint8_t *out, uint8_t *out2, int len2,uint8_t *in, int *dlen, int skip)
+int wbus_io( uint8_t cmd, uint8_t *out, uint8_t *out2, int len2, uint8_t *in, int *dlen, int skip)
 {
   int err, tries;
   int len;
@@ -243,7 +238,7 @@ int wbus_io( uint8_t cmd,uint8_t *out, uint8_t *out2, int len2,uint8_t *in, int 
   tries = 0;
   do {
     if (tries != 0) {
-    //CommunicationsErrorCount++;
+      //CommunicationsErrorCount++;
       //PRINTF("wbus_io() retry: %d\n", tries);
       delay(50);
       wbus_init();
@@ -263,99 +258,62 @@ int wbus_io( uint8_t cmd,uint8_t *out, uint8_t *out2, int len2,uint8_t *in, int 
     if (err != 0) {
       continue;
     }
-
   }
   while (tries < 4 && err != 0);
 
-  //Appears that there is a small 70ms delay on the real Thermotest software between requests, see if mimick this here helps reliability...
+  //Appears that there is a small 70ms delay on the real Thermotest software between requests, mimick this here which helps data reliability...
   delay(30);
 
   return err;
 }
 
-int wbus_get_fault_count(unsigned char ErrorList[32]) {
-  int err, len;
-
-  unsigned char tmp[2];
-
-  tmp[0] = ERR_LIST;
-  len = 1;
-  err = wbus_io(WBUS_CMD_ERR, tmp, NULL, 0, ErrorList, &len, 1);
-  //if (err) goto bail;
-  //bail:
-  return err;
+int wbus_ident(uint8_t identCommand, uint8_t *in) {
+  uint8_t tmp;
+  uint8_t tmp2[2];
+  tmp = identCommand;
+  len = 1; 
+  return wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, in, &len, 1); 
 }
-
-int wbus_clear_faults() {
-  int err, len;
-  unsigned char tmp;
-
-  tmp = ERR_DEL; len = 1; err = wbus_io(WBUS_CMD_ERR, &tmp, NULL, 0, &tmp, &len, 0);
-
-  return err;
-}
-
-int wbus_get_fault(unsigned char ErrorNumber, HANDLE_ERRINFO errorInfo) {
-  int err, len;
-
-  unsigned char tmp[2];
-
-  len = 2;
-  tmp[0] = ERR_READ;
-  tmp[1] = ErrorNumber;
-  err = wbus_io(WBUS_CMD_ERR, tmp, NULL, 0, (unsigned char*)errorInfo, &len, 1);
-
-  if (err) goto bail;
-
-bail:
-  return err;
-}
-
-
-/*
-int wbus_get_version_wbinfo(HANDLE_VERSION_WBINFO i)
-{
-  int err, len;
-  unsigned char tmp, tmp2[2];
-
-  tmp = IDENT_WB_VER; len = 1; err = wbus_io(WBUS_CMD_IDENT, &tmp, NULL, 0, &i->wbus_ver, &len, 1);
-  if (err) goto bail;
-
-  tmp = IDENT_WB_CODE;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->wbus_code, &len, 1);
-  if (err) goto bail;
-
-  tmp = IDENT_HWSW_VER; len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->hw_ver, &len, 1);
-  if (err) goto bail;
-
-  tmp = IDENT_DATA_SET; len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->data_set_id, &len, 1);
-  if (err) goto bail;
-
-  tmp = IDENT_SW_ID;   len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->sw_id, &len, 1);
-
-bail:
-  return err;
-}
-*/
 
 /* Overall info */
 int wbus_get_basic_info(HANDLE_BASIC_WBINFO i)
 {
-  int err, len;
-  unsigned char tmp, tmp2[2];
+  int err;
+//  uint8_t tmp;
 
-  tmp = IDENT_DEV_NAME; len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, (unsigned char*)i->dev_name, &len, 1);
+//  tmp = IDENT_DEV_NAME; len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, (unsigned char*)i->dev_name, &len, 1);
+//  if (err) goto bail;
+
+  err=wbus_ident(IDENT_DEV_NAME,(unsigned char*)i->dev_name);
   if (err) goto bail;
-  i->dev_name[len] = 0; // Hack: Null terminate this string
-  tmp = IDENT_DEV_ID;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->dev_id, &len, 1);
+  //Hack: Null terminate this string - len is set globally 
+  i->dev_name[len] = 0; 
+  
+  err=wbus_ident(IDENT_DEV_ID,i->dev_id);
   if (err) goto bail;
-  tmp = IDENT_DOM_CU;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->dom_cu, &len, 1);
+
+  err=wbus_ident(IDENT_DOM_CU,i->dom_cu);
   if (err) goto bail;
-  tmp = IDENT_DOM_HT;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->dom_ht, &len, 1);
+
+  err=wbus_ident(IDENT_DOM_HT,i->dom_ht);
   if (err) goto bail;
-  tmp = IDENT_CUSTID;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->customer_id, &len, 1);
+
+  err=wbus_ident(IDENT_CUSTID,i->customer_id);
   if (err) goto bail;
-  tmp = IDENT_SERIAL;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->serial, &len, 1);
+
+  err=wbus_ident(IDENT_SERIAL,i->serial);
   if (err) goto bail;
+  
+  //tmp = IDENT_DEV_ID;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->dev_id, &len, 1);
+  //if (err) goto bail;
+  //tmp = IDENT_DOM_CU;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->dom_cu, &len, 1);
+  //if (err) goto bail;
+  //tmp = IDENT_DOM_HT;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->dom_ht, &len, 1);
+  //if (err) goto bail;
+  //tmp = IDENT_CUSTID;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->customer_id, &len, 1);
+  //if (err) goto bail;
+  //tmp = IDENT_SERIAL;  len = 1; err = wbus_io( WBUS_CMD_IDENT, &tmp, NULL, 0, i->serial, &len, 1);
+  //if (err) goto bail;
 
 bail:
   return err;
@@ -366,8 +324,7 @@ bail:
 int wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx)
 {
   int err  = 0;
-  int len;
-  unsigned char sen;
+  uint8_t sen;
 
   /* Tweak: skip some addresses since reading them just causes long delays. */
   switch (idx) {
@@ -386,15 +343,14 @@ int wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx)
       break;
   }
 
-  sen = idx; len = 1;
+  sen = idx;
+  len = 1;
   err = wbus_io(WBUS_CMD_QUERY, &sen, NULL, 0, sensor->value, &len, 1);
   if (err != 0)
   {
     //PRINTF("Reading sensor %d failed\n", );
     sensor->length = 0;
-
   } else {
-
     /* Store length of received value */
     sensor->length = len;
     sensor->idx = idx;
@@ -406,49 +362,57 @@ int wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx)
 /* Turn heater on for time minutes */
 int wbus_turnOn(unsigned char cmd, unsigned char time)
 {
-  int err = 0;
-  //unsigned char cmd;
-  unsigned char tmp[1];
-  int len = 1;  
-  tmp[0] = time;
-  err = wbus_io(cmd, tmp, NULL, 0, tmp, &len, 0);	  
-  return err;
+  len = 1;
+  cmdbuf[0] = time;
+  return wbus_io(cmd, cmdbuf, NULL, 0, cmdbuf, &len, 0);
 }
 
 /* Check current command */
 int wbus_check(unsigned char mode)
 {
-  int err = 0;
-  int len = 2;
-  unsigned char tmp[3];
-  tmp[0] = mode;
-  tmp[1] = 0;  
-  err = wbus_io(WBUS_CMD_CHK, tmp, NULL, 0, tmp, &len, 0);	  
-  return err;
+  len = 2;
+  //unsigned char tmp[3];
+  cmdbuf[0] = mode;
+  cmdbuf[1] = 0;
+  return wbus_io(WBUS_CMD_CHK, cmdbuf, NULL, 0, cmdbuf, &len, 0);
 }
 
 /* Turn heater off */
 int wbus_turnOff()
 {
-  int err = 0;
-  int len = 0;
-  unsigned char tmp[2];	
-  err = wbus_io(WBUS_CMD_OFF, tmp, NULL, 0, tmp, &len, 0);	  
-  return err;
+  len = 0;
+  return wbus_io(WBUS_CMD_OFF, cmdbuf, NULL, 0, cmdbuf, &len, 0);
 }
 
-/*
- * Fuel Priming
- */
 int wbus_fuelPrime( unsigned char time)
 {
-  unsigned char tmp[5];
-  int len;
-    
-  tmp[0] = 0x03;
-  tmp[1] = 0x00;
-  tmp[2] = time>>1;
+  cmdbuf[0] = 0x03;
+  cmdbuf[1] = 0x00;
+  cmdbuf[2] = time >> 1;
   len = 3;
-  
-  return wbus_io(WBUS_CMD_X, tmp, NULL, 0, tmp, &len, 0);
+
+  return wbus_io(WBUS_CMD_X, cmdbuf, NULL, 0, cmdbuf, &len, 0);
 }
+
+int wbus_get_fault_count(unsigned char ErrorList[32]) {
+  unsigned char tmp[2];
+
+  tmp[0] = ERR_LIST;
+  len = 1;
+  return wbus_io(WBUS_CMD_ERR, tmp, NULL, 0, ErrorList, &len, 1);
+}
+
+int wbus_clear_faults() {
+  uint8_t tmp;
+  tmp = ERR_DEL;
+  len = 1;
+  return wbus_io(WBUS_CMD_ERR, &tmp, NULL, 0, &tmp, &len, 0);
+}
+
+int wbus_get_fault(unsigned char ErrorNumber, HANDLE_ERRINFO errorInfo) {
+  len = 2;
+  cmdbuf[0] = ERR_READ;
+  cmdbuf[1] = ErrorNumber;
+  return wbus_io(WBUS_CMD_ERR, cmdbuf, NULL, 0, (unsigned char*)errorInfo, &len, 1);
+}
+
