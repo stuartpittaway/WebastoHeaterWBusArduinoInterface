@@ -63,6 +63,9 @@ PROGMEMLABEL(label_FaultsCleared,"Faults cleared")
 //PROGMEMLABEL(label_NoMoreFaultsFound,"No more faults")
 
 PROGMEMLABEL(label_Dev, "Dev:")
+PROGMEMLABEL(label_op, "Op:")
+PROGMEMLABEL(label_N, " N:")
+
 
 /* Menu Options */
 PROGMEMLABEL(label_menu_shheaton, "Heat On")

@@ -15,7 +15,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
-
    Original idea and work by Manuel Jander  mjander@users.sourceforge.net
    https://sourceforge.net/projects/libwbus/
 
@@ -27,7 +26,9 @@
   20150429 Compile size Arduino 1.6.1, 30980 bytes, 1226 RAM.   Removed idle clock screen
   20150429 Compile size Arduino 1.6.1, 30926 bytes, 1220 RAM.   Removed el_menu_space
   20150429 Compile size Arduino 1.6.1, 30934 bytes, 1235 RAM.   Added perm. clock display on 1st line of LCD
-
+  20150501 Compile size Arduino 1.6.1, 30784 bytes, 1235 RAM.
+  20150501 Added copy_string function to reduce code size. Compile size Arduino 1.6.1, 30752 bytes, 1235 RAM.
+  20150501 Compile size Arduino 1.6.1, 30718 bytes, 1233 RAM.
 */
 
 // __TIME__ __DATE__
@@ -48,9 +49,11 @@
 #include <M2tk.h>
 #include "utility/m2ghu8g.h"
 
-#define uiKeySelectPin  2
-#define uiKeyNextPin  3
-#define uiKeyPrevPin 4
+#define uiKeySelectPin  14  //A0
+#define uiKeyNextPin  15  //A1
+#define uiKeyPrevPin 16  //A2
+
+#define lcdBacklight 5
 
 //The famous Nokia 5110 display, driven by a PCD8544 chip.  Resolution 84x48 pixels.
 //u8g_dev_pcd8544_84x48_hw_spi
@@ -132,7 +135,6 @@ M2_LIST(list_dialog) = { &el_dialog_label, &el_button_close_dialog };
 M2_VLIST(el_dialog_vlist, NULL, list_dialog);
 M2_ALIGN(top_dialog, NULL, &el_dialog_vlist);
 
-
 /* MAIN MENU */
 M2_STRLIST(el_strlist_menu, "l3w76" , &first_visible_line1, &total_menu_items, el_strlist_mainmenu);
 M2_VSB(el_vsb_menu, "l3w4" , &first_visible_line1, &total_menu_items);
@@ -144,12 +146,10 @@ M2_LABELFN(el_footer_label, NULL, label_footer);
 M2_LABELFN(el_footer_label2, NULL, label_footer2);
 M2_LABELFN(el_label_clocktext, "b1", label_clocktext);
 
-M2_LIST(list_menu2) = { &el_label_clocktext,&el_menu_hlist, &el_footer_label, &el_footer_label2 };
+M2_LIST(list_menu2) = { &el_label_clocktext, &el_menu_hlist, &el_footer_label, &el_footer_label2 };
 M2_VLIST(el_menu_vlist, NULL, list_menu2);
 
 M2_ALIGN(top_buttonmenu, "-0|2", &el_menu_vlist);
-
-
 
 //U8
 M2tk m2(&top_buttonmenu, m2_es_arduino_rotary_encoder , m2_eh_4bd, m2_gh_u8g_bf);
@@ -173,6 +173,12 @@ const char *fn_value(m2_rom_void_p element)
   return value;
 }
 
+char *copy_string(char *buf, const char* progmemstring)
+{
+  strcat_P(buf, progmemstring);
+  buf += strlen_P(progmemstring);
+  return buf;
+}
 
 void build_info_text_basic()
 {
@@ -181,32 +187,32 @@ void build_info_text_basic()
 
   int err = wbus_get_basic_info(&wb_info);
   if (!err) {
-    strcat_P(v, label_DeviceName); v += strlen_P(label_DeviceName);
+    v = copy_string(v, label_DeviceName);
     strcat(v, wb_info.dev_name); v += strlen(wb_info.dev_name);
 
-    strcat_P(v, label_DeviceIDNo); v += strlen_P(label_DeviceIDNo);
+    v = copy_string(v, label_DeviceIDNo);
     v = hexdump(v, wb_info.dev_id, 4, false);
     *v++ = wb_info.dev_id[4];
 
-    strcat_P(v, label_DateOfManufactureControlUnit); v += strlen_P(label_DateOfManufactureControlUnit);
+    v = copy_string(v, label_DateOfManufactureControlUnit);
     v = PrintHexByte(v, wb_info.dom_cu[0]);
     *v++ = '.';
     v = PrintHexByte(v, wb_info.dom_cu[1]);
     *v++ = '.';
     v = i2str(2000 + wb_info.dom_cu[2], v);
 
-    strcat_P(v, label_DateOfManufactureHeater); v += strlen_P(label_DateOfManufactureHeater);
+    v = copy_string(v, label_DateOfManufactureHeater);
     v = PrintHexByte(v, wb_info.dom_ht[0]);
     *v++ = '.';
     v = PrintHexByte(v, wb_info.dom_ht[1]);
     *v++ = '.';
     v = i2str(2000 + wb_info.dom_ht[2], v);
 
-    strcat_P(v, label_CustomerIdentificationNumber); v += strlen_P(label_CustomerIdentificationNumber);
+    v = copy_string(v, label_CustomerIdentificationNumber);
     strcat(v, (const char*)wb_info.customer_id);
     v += strlen((const char*)wb_info.customer_id);
 
-    strcat_P(v, label_SerialNumber); v += strlen_P(label_SerialNumber);
+    v = copy_string(v, label_SerialNumber);
     v = hexdump(v, wb_info.serial, 5, false);
 
   } else {
@@ -252,8 +258,7 @@ void fn_faults() {
       //  Operating hour counter: 5590:15 (h:m)
       for (int errIndex = 0; errIndex < ErrorList[0]; errIndex++ ) {
 
-        strcat_P(v, label_ErrorCount);
-        v += strlen_P(label_ErrorCount);
+        v = copy_string(v, label_ErrorCount);
         v = i2str(errIndex + 1, v);
         *v++ = '\n';
 
@@ -294,7 +299,7 @@ void fn_faults() {
           //          v = i2str( twobyte2word(err_info.volt), v);
 
           //5586:31 (h:m) = 15 d2 1f
-          strcat_P(v, label_OperatingTime); v += strlen_P(label_OperatingTime);
+          v = copy_string(v, label_OperatingTime);
           v = i2str( WORD2HOUR(err_info.hour), v);
           *v++ = 'h';
           v = i2str( err_info.minute, v);
@@ -307,7 +312,7 @@ void fn_faults() {
       }
 
     } else {
-      strcat_P(v, label_NoFaultsFound); v += strlen_P(label_NoFaultsFound);
+      v = copy_string(v, label_NoFaultsFound);
       m2.setRoot(&top_dialog);
       return;
     }
@@ -351,7 +356,7 @@ void clearBuffer() {
 char* ShowError(uint8_t errCode) {
   clearBuffer();
   char* v = value;
-  strcat_P(v, label_wbusError); v += strlen_P(label_wbusError);
+  v = copy_string(v, label_wbusError);
   v = PrintHexByte(v, errCode);
   return v;
 }
@@ -445,26 +450,26 @@ const char *el_strlist_mainmenu(uint8_t idx, uint8_t msg) {
     {
       case 0:
         //Switch Supplimental heater ON
-        //strcpy_P(v, label_shheater);
-        //v += strlen_P(label_shheater);
-        //strcpy_P(v, label_on);
 
-        strcpy_P(v, label_menu_shheaton);
+//WBUS_CMD_ON_PH
+        if (int err = wbus_turnOn(WBUS_CMD_ON_SH, 60) == 0) {
+          //strcpy_P(v, label_menu_shheaton);
+          v = copy_string(v, label_menu_shheaton);
+        } else {
+          ShowError(err);
+        }
 
-        wbus_turnOn(WBUS_SH, 60);
         m2.setRoot(&top_dialog);
         break;
 
       case 1:
         //Switch Supplimental heater OFF
-        wbus_turnOff();
 
-        //strcpy_P(v, label_shheater);
-        //v += strlen_P(label_shheater);
-        //strcpy_P(v, label_off);
-
-        strcpy_P(v, label_menu_shheatoff);
-
+        if (int err = wbus_turnOff() == 0) {
+          v = copy_string(v, label_menu_shheatoff);
+        } else {
+          ShowError(err);
+        }
 
         m2.setRoot(&top_dialog);
         break;
@@ -553,11 +558,12 @@ void keepAlive() {
         //What to do with errors?
         //Have to use textline2 as we dont have full font for clock display
         v = textline2;
-        strcat_P(v, label_wbusError); v += strlen_P(label_wbusError);
+        v = copy_string(v, label_wbusError);
+        //strcat_P(v, label_wbusError); v += strlen_P(label_wbusError);
         v = PrintHexByte(v, err);
       } else {
 
-        
+
         if (m2.getRoot() == &top_buttonmenu) {
           //Must be the menu, switch text in a cycle
 
@@ -566,22 +572,18 @@ void keepAlive() {
 
               //QUERY_STATE results
               //Op:
-              *v++ = 'O';
-              *v++ = 'p';
-              *v++ = ':';
+              v = copy_string(v, label_op);
               v = PrintHexByte(v, KeepAlive_wb_sensors.value[OP_STATE]);
 
               //OP_STATE value maps to the WB_STATE_ values, for instance 0x04 = WB_STATE_OFF
 
-              *v++ = ' ';
-              *v++ = 'N';
-              *v++ = ':';
+              v = copy_string(v, label_N);
               v = i2str( KeepAlive_wb_sensors.value[OP_STATE_N], v);
               *v = 0;
 
               v = textline2;
-              strcat_P(v, label_Dev); v += strlen_P(label_Dev);
-              v = PrintHexByte(v, KeepAlive_wb_sensors.value[DEV_STATE]);
+              v = copy_string(v, label_Dev);
+              v = PrintHexByte(v, KeepAlive_wb_sensors.value[DEV_STATE]);                                         
               *v = 0;
 
               break;
@@ -616,10 +618,10 @@ void keepAlive() {
               *v++ = ' ';
               *v++ = 'g';
               v = i2str( KeepAlive_wb_sensors.value[SEN_GPR], v);
-              
+
               //Null terminator
               //*v = 0;
-              
+
               footerToggle = -1;
               break;
           }
@@ -663,8 +665,18 @@ void loop() {
   //  }
 }
 
+void backlightOn() {
+  digitalWrite(lcdBacklight, HIGH);
+}
+void backlightOff() {
+  digitalWrite(lcdBacklight, LOW);
+}
+
 void setup() {
-  
+
+  pinMode(lcdBacklight, OUTPUT);
+
+  backlightOn();
 
   getTimeFunction();
   setSyncProvider(getTimeFunction);

@@ -10,11 +10,12 @@
 #include <Arduino.h>
 #include "wbus_const.h"
 
+
 typedef struct
 {
   unsigned char wbus_ver;
   unsigned char wbus_code[7];
-  unsigned char data_set_id[6];  
+  unsigned char data_set_id[6];
   unsigned char sw_id[6];
   unsigned char hw_ver[2]; // week / year
   unsigned char sw_ver[5]; // day of week / week / year // ver/ver
@@ -59,47 +60,19 @@ typedef struct {
 
 typedef err_info_t *HANDLE_ERRINFO;
 
-/*
-class wbus
-{
-  private:
-    int wbus_msg_recv(uint8_t *addr, uint8_t *cmd, uint8_t *data, int *dlen, int skip);
-    int wbus_msg_send( uint8_t addr, uint8_t cmd, uint8_t *data, int len, uint8_t *data2, int len2);
-    unsigned char checksum(unsigned char *buf, unsigned char len, unsigned char chk);
-    char* getVersion(char *str, unsigned char *d);
-    void OpenSerial();
-    char* hexdump(char *str, unsigned char *d, int l);
-    int wbus_io( uint8_t cmd, uint8_t *out, uint8_t *out2, int len2, uint8_t *in, int *dlen, int skip);
+int wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx);
+void wbus_init();
+//int wbus_get_version_wbinfo(HANDLE_VERSION_WBINFO i);
+int wbus_get_basic_info(HANDLE_BASIC_WBINFO i);
 
-  public:
-    // Constructor takes address of serial port
-    wbus(HardwareSerial& serial);
-    //void wbus_sensor_print(char *str, HANDLE_WBSENSOR s);
-    //void wbus_ident_print(char *str, HANDLE_WBINFO i, int line);
-    ~wbus();
-};
-*/
+int wbus_get_fault_count(unsigned char ErrorList[32]);
+int wbus_get_fault(unsigned char ErrorNumber, HANDLE_ERRINFO errorInfo);
+int wbus_clear_faults();
 
-/* Turn heater on/off */
-typedef enum {
-  WBUS_VENT,
-  WBUS_SH,
-  WBUS_PH
-} WBUS_TURNON;
-
-
-//HardwareSerial& _MySerial;
-    int wbus_sensor_read(HANDLE_WBSENSOR sensor, int idx);
-    void wbus_init();
-    int wbus_get_version_wbinfo(HANDLE_VERSION_WBINFO i);
-    int wbus_get_basic_info(HANDLE_BASIC_WBINFO i);
-   
-    int wbus_get_fault_count(unsigned char ErrorList[32]);
-    int wbus_get_fault(unsigned char ErrorNumber, HANDLE_ERRINFO errorInfo);
-    int wbus_clear_faults();
-
-int wbus_turnOn(WBUS_TURNON mode, unsigned char time);
+int wbus_turnOn(unsigned char mode, unsigned char time);
 int wbus_turnOff();
 /* Check or keep alive heating process. mode is the argument that was passed as to wbus_turnOn() */
-int wbus_check(WBUS_TURNON mode);
+int wbus_check(unsigned char mode);
 int wbus_fuelPrime( unsigned char time);
+
+
