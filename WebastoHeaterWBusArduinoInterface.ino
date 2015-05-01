@@ -29,7 +29,7 @@
   20150501 Compile size Arduino 1.6.1, 30784 bytes, 1235 RAM.
   20150501 Added copy_string function to reduce code size. Compile size Arduino 1.6.1, 30752 bytes, 1235 RAM.
   20150501 Compile size Arduino 1.6.1, 30718 bytes, 1233 RAM.
-  20150501 Compile size Arduino 1.6.1, 30538 bytes, 1240 RAM. Change wbus to use shared buffer
+  20150501 Compile size Arduino 1.6.1, 30632 bytes, 1244 RAM. Change wbus to use shared buffer
 */
 
 // __TIME__ __DATE__
@@ -76,7 +76,7 @@ uint8_t total_menu_items = 7;
 
 unsigned long previousMillis;
 unsigned long currentMillis;
-//unsigned long time_since_key_press = 0;
+unsigned long time_since_key_press = 0;
 
 bool updatedisplay;
 uint8_t footerToggle = 0;
@@ -449,7 +449,7 @@ const char *el_strlist_mainmenu(uint8_t idx, uint8_t msg) {
       case 0:
         //Switch Supplimental heater ON
 
-//WBUS_CMD_ON_PH
+        //WBUS_CMD_ON_PH
         if (int err = wbus_turnOn(WBUS_CMD_ON_SH, 60) == 0) {
           //strcpy_P(v, label_menu_shheaton);
           v = copy_string(v, label_menu_shheaton);
@@ -578,7 +578,7 @@ void keepAlive() {
 
               v = textline2;
               v = copy_string(v, label_Dev);
-              v = PrintHexByte(v, KeepAlive_wb_sensors.value[DEV_STATE]);                                         
+              v = PrintHexByte(v, KeepAlive_wb_sensors.value[DEV_STATE]);
               *v = 0;
 
               break;
@@ -641,10 +641,11 @@ void loop() {
   //Redraw screen if key press event or updatedisplay flag is true
   if (m2.handleKey() | updatedisplay) {
 
-    //if (!updatedisplay) {
-    //Key was pressed so reset clock timer to 45 seconds
-    //time_since_key_press = millis() + (45000);
-    //}
+    if (!updatedisplay) {
+      backlightOn();
+      //Key was pressed so reset clock timer to 45 seconds
+      time_since_key_press = millis() + (45000);
+    }
 
     updatedisplay = false;
 
@@ -655,9 +656,10 @@ void loop() {
   }
 
   //Must be a way to save us 4 bytes instead of using an unsigned long for time_since_key_press
-  //  if (millis() > time_since_key_press) {
-  //  m2.setRoot(&el_bigclock);
-  //  }
+  if (millis() > time_since_key_press) {
+    //  m2.setRoot(&el_bigclock);
+    backlightOff();
+  }
 }
 
 void backlightOn() {
