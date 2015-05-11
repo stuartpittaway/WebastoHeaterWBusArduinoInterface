@@ -60,7 +60,6 @@ PROGMEMLABEL(label_wbusError,"Err 0x")
 
 PROGMEMLABEL(label_NoFaultsFound,"No fault found")
 PROGMEMLABEL(label_FaultsCleared,"Faults cleared")
-//PROGMEMLABEL(label_NoMoreFaultsFound,"No more faults")
 
 PROGMEMLABEL(label_Dev, "Dev:")
 PROGMEMLABEL(label_op, "Op:")
@@ -70,6 +69,7 @@ PROGMEMLABEL(label_threespaces,"   ")
 /* Menu Options */
 PROGMEMLABEL(label_menu_shheaton, "Heat On")
 PROGMEMLABEL(label_menu_shheatoff, "Heat Off")
+PROGMEMLABEL(label_menu_settimer, "Set timer")
 PROGMEMLABEL(label_menu_heaterinfo, "Heater info")
 PROGMEMLABEL(label_menu_versioninfo, "Version info")
 PROGMEMLABEL(label_menu_showfaults, "Show faults")

@@ -30,12 +30,15 @@
   20150501 Added copy_string function to reduce code size. Compile size Arduino 1.6.1, 30752 bytes, 1235 RAM.
   20150501 Compile size Arduino 1.6.1, 30718 bytes, 1233 RAM.
   20150501 Compile size Arduino 1.6.1, 30632 bytes, 1244 RAM. Change wbus to use shared buffer
+
+
+Need to check out the IDENT_WB_CODE reply
 */
 
 // __TIME__ __DATE__
 
 #include <Arduino.h>
-
+#include <EEPROM.h>
 #include "utility.h"
 
 #include <Wire.h>
@@ -72,11 +75,17 @@ char value[190];
 uint8_t total_lines1 = 0;
 uint8_t first_visible_line1 = 0;
 uint8_t updateDisplayCounter = 0;
-uint8_t total_menu_items = 7;
+uint8_t total_menu_items = 8;
+
+uint8_t timerEnabled;
+uint8_t timerHour;
+uint8_t timerMinute;
 
 unsigned long previousMillis;
 unsigned long currentMillis;
 unsigned long time_since_key_press = 0;
+unsigned char heaterMode = WBUS_CMD_OFF;
+
 
 bool updatedisplay;
 uint8_t footerToggle = 0;
@@ -127,6 +136,14 @@ M2_LIST(list_dt_buttons) = { &el_date, &el_time, &el_dt_ok, &el_dt_cancel };
 //Vertical align/list
 M2_VLIST(el_top_dt2, NULL, list_dt_buttons);
 M2_ALIGN(el_top_dt, NULL, &el_top_dt2);
+
+
+//SET TIMER
+M2_BUTTON(el_dt_ok2, NULL, "OK", fn_button_confirmtimer);
+M2_BUTTON(el_dt_cancel2, NULL, "CANCEL", fn_button_canceltimer);
+M2_LIST(list_dt_buttons2) = { &el_time, &el_dt_ok2, &el_dt_cancel2 };
+M2_VLIST(el_top_dt3, NULL, list_dt_buttons2);
+M2_ALIGN(el_top_settimer, NULL, &el_top_dt3);
 
 
 /* DIALOG */
@@ -400,7 +417,11 @@ void updateClockString() {
     *v++ = '/';
     v = i2str_zeropad( tmYearToCalendar(tm.Year) - 2000, v);
 
-    v = copy_string(v, label_threespaces);
+    *v++ = ' ';
+    *v++ = timerEnabled ? 'T' : ' ';
+    *v++ = ' ';
+
+    //v = copy_string(v, label_threespaces);
 
     v = i2str_zeropad( tm.Hour, v);
     *v++ = ':';
@@ -408,6 +429,19 @@ void updateClockString() {
 
     //Terminator
     //*v = 0;
+
+
+    if ((timerEnabled == 255) && (tm.Hour == timerHour) && (tm.Minute == timerMinute) && (heaterMode == WBUS_CMD_OFF)) {
+      //Switch on HEATER!
+      //heaterOn();
+      digitalWrite(6, LOW);
+    }
+    else
+    {
+      digitalWrite(6, HIGH);
+    }
+
+
   }
 }
 
@@ -425,18 +459,21 @@ const char *el_strlist_mainmenu(uint8_t idx, uint8_t msg) {
       strcpy_P(v, label_menu_shheatoff);
       break;
     case 2 :
+      strcpy_P(v, label_menu_settimer);
+      break;
+    case 3 :
       strcpy_P(v, label_menu_heaterinfo);
       break;
-    case 3:
+    case 4:
       strcpy_P(v, label_menu_showfaults);
       break;
-    case 4:
+    case 5:
       strcpy_P(v, label_menu_clearfaults);
       break;
-    case 5:
+    case 6:
       strcpy_P(v, label_menu_setdatetime);
       break;
-    case 6:
+    case 7:
       strcpy_P(v, label_menu_fuelprime);
       break;
   };
@@ -449,15 +486,10 @@ const char *el_strlist_mainmenu(uint8_t idx, uint8_t msg) {
       case 0:
         //Switch Supplimental heater ON
 
-        //WBUS_CMD_ON_PH
-        if (int err = wbus_turnOn(WBUS_CMD_ON_SH, 60) == 0) {
-          //strcpy_P(v, label_menu_shheaton);
+        if (!heaterOn()) {
           v = copy_string(v, label_menu_shheaton);
-        } else {
-          ShowError(err);
+          m2.setRoot(&top_dialog);
         }
-
-        m2.setRoot(&top_dialog);
         break;
 
       case 1:
@@ -473,24 +505,29 @@ const char *el_strlist_mainmenu(uint8_t idx, uint8_t msg) {
         break;
 
       case 2 :
+        //Set Timer
+        fn_begin_set_timer();
+        break;
+
+      case 3 :
         //Basic heater info
         build_info_text_basic();
         m2.setRoot(&el_infopages_root);
         break;
 
-      case 3:
+      case 4:
         fn_faults();
         break;
 
-      case 4:
+      case 5:
         fn_clear_faults();
         break;
 
-      case 5:
+      case 6:
         fn_begin_set_date_time();
         break;
 
-      case 6:
+      case 7:
         //Start fuel prime
         strcpy_P(v, label_fuelprime);
         wbus_fuelPrime(10);
@@ -500,6 +537,18 @@ const char *el_strlist_mainmenu(uint8_t idx, uint8_t msg) {
   }
 
   return value;
+}
+
+bool heaterOn() {
+  //WBUS_CMD_ON_PH
+  if (int err = wbus_turnOn(WBUS_CMD_ON_SH, 60) == 0) {
+    heaterMode = WBUS_CMD_ON_SH;
+
+    return true;
+  } else {
+    ShowError(err);
+    return false;
+  }
 }
 
 inline void fn_begin_set_date_time() {
@@ -513,6 +562,31 @@ inline void fn_button_confirmdatetime(m2_el_fnarg_p fnarg) {
   //Set the DS1307 RTC chip
   RTC.write(tm);
   home_menu();
+}
+
+inline void fn_button_canceltimer(m2_el_fnarg_p fnarg) {
+  //Disabled
+  EEPROM.write(0, 0);
+  timerEnabled = 0;
+  home_menu();
+}
+
+inline void fn_button_confirmtimer(m2_el_fnarg_p fnarg) {
+  //Enabled
+  EEPROM.write(0, 255);
+  EEPROM.write(1, tm.Hour);
+  EEPROM.write(2, tm.Minute);
+
+  timerEnabled = 255;
+  timerHour = tm.Hour;
+  timerMinute = tm.Minute;
+  home_menu();
+}
+
+inline void fn_begin_set_timer() {
+  tm.Hour = timerHour;
+  tm.Minute = timerMinute;
+  m2.setRoot(&el_top_settimer);
 }
 
 void keepAlive() {
@@ -537,6 +611,11 @@ void keepAlive() {
       //Use updatedisplay instead so we can timeout if needed
       //m2.setKey(M2_KEY_REFRESH);
 
+      //Force check of heater to keep it running if its switched on
+      if (heaterMode != WBUS_CMD_OFF) {
+        wbus_check(heaterMode);
+      }
+
       updatedisplay = true;
 
       //Clear text strings
@@ -546,16 +625,12 @@ void keepAlive() {
       //Update every 3 refreshes (about 8 seconds)
       updateDisplayCounter = 2 + 1;
 
-      char* v = textline1;
-
       updateClockString();
 
+      char* v = textline1;
       if (err != 0) {
         //What to do with errors?
-        //Have to use textline2 as we dont have full font for clock display
-        v = textline2;
         v = copy_string(v, label_wbusError);
-        //strcat_P(v, label_wbusError); v += strlen_P(label_wbusError);
         v = PrintHexByte(v, err);
       } else {
 
@@ -644,7 +719,7 @@ void loop() {
     if (!updatedisplay) {
       backlightOn();
       //Key was pressed so reset clock timer to 45 seconds
-      time_since_key_press = millis() + (45000);
+      time_since_key_press = millis() + (30000);
     }
 
     updatedisplay = false;
@@ -657,7 +732,6 @@ void loop() {
 
   //Must be a way to save us 4 bytes instead of using an unsigned long for time_since_key_press
   if (millis() > time_since_key_press) {
-    //  m2.setRoot(&el_bigclock);
     backlightOff();
   }
 }
@@ -665,19 +739,28 @@ void loop() {
 void backlightOn() {
   digitalWrite(lcdBacklight, HIGH);
 }
+
 void backlightOff() {
   digitalWrite(lcdBacklight, LOW);
 }
 
+
 void setup() {
   pinMode(lcdBacklight, OUTPUT);
+  //Red LED on
+  pinMode(6, OUTPUT);
 
   backlightOn();
+
+  timerEnabled = EEPROM.read(0);
+  timerHour = EEPROM.read(1);
+  timerMinute = EEPROM.read(2);
 
   getTimeFunction();
   setSyncProvider(getTimeFunction);
   setSyncInterval(600);  //10 minutes
 
+  updateClockString();
 
   // put your setup code here, to run once:
   /* connect u8glib with m2tklib */
