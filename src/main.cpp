@@ -1,3 +1,4 @@
+
 /*
   WebastoHeaterWBusArduinoInterface
 
@@ -30,12 +31,15 @@
   20150501 Added copy_string function to reduce code size. Compile size Arduino 1.6.1, 30752 bytes, 1235 RAM.
   20150501 Compile size Arduino 1.6.1, 30718 bytes, 1233 RAM.
   20150501 Compile size Arduino 1.6.1, 30632 bytes, 1244 RAM. Change wbus to use shared buffer
+  20150501 Compile size Arduino 1.6.1, 30632 bytes, 1244 RAM. Change wbus to use shared buffer
+  20161204 Compile under Platform.IO with updated external libraries
+  20161204 Compile size Platform.IO, 29,730 bytes
 
-
-Need to check out the IDENT_WB_CODE reply
+  Need to check out the IDENT_WB_CODE reply
 */
 
 // __TIME__ __DATE__
+
 
 #include <Arduino.h>
 #include <EEPROM.h>
@@ -45,56 +49,49 @@ Need to check out the IDENT_WB_CODE reply
 #include <DS1307RTC.h>
 #include <Time.h>
 
-#include "constants.h"
-#include "wbus.h"
-
 //Only for u8glib
 #include <U8glib.h>
-#include <M2tk.h>
-#include "utility/m2ghu8g.h"
-
-#define uiKeySelectPin  14  //A0
-#define uiKeyNextPin  15  //A1
-#define uiKeyPrevPin 16  //A2
-
-#define lcdBacklight 5
 
 //The famous Nokia 5110 display, driven by a PCD8544 chip.  Resolution 84x48 pixels.
-//u8g_dev_pcd8544_84x48_hw_spi
-//U8GLIB_PCD8544(cs, a0 [, reset])
 U8GLIB_PCD8544 u8g(10, 9 , 8);
 
-//buffer for text output of date/time
-char textline1[17];
-char textline2[17];
-char clocktext[17];
-
-//Massive (!) buffer for scrolling text/string output
-char value[190];
-
-uint8_t total_lines1 = 0;
-uint8_t first_visible_line1 = 0;
-uint8_t updateDisplayCounter = 0;
-uint8_t total_menu_items = 8;
-
-uint8_t timerEnabled;
-uint8_t timerHour;
-uint8_t timerMinute;
-
-unsigned long previousMillis;
-unsigned long currentMillis;
-unsigned long time_since_key_press = 0;
-unsigned char heaterMode = WBUS_CMD_OFF;
+#include "main.h"
 
 
-bool updatedisplay;
-uint8_t footerToggle = 0;
-wb_sensor_t KeepAlive_wb_sensors;
-tmElements_t tm;
+inline void fn_button_confirmdatetime(m2_el_fnarg_p fnarg) {
+  tm.Year = y2kYearToTm(tm.Year);
+  //Set the DS1307 RTC chip
+  RTC.write(tm);
+  home_menu();
+}
+
+inline void fn_button_canceltimer(m2_el_fnarg_p fnarg) {
+  //Disabled
+  EEPROM.write(0, 0);
+  timerEnabled = 0;
+  home_menu();
+}
+
+inline void fn_button_confirmtimer(m2_el_fnarg_p fnarg) {
+  //Enabled
+  EEPROM.write(0, 255);
+  EEPROM.write(1, tm.Hour);
+  EEPROM.write(2, tm.Minute);
+
+  timerEnabled = 255;
+  timerHour = tm.Hour;
+  timerMinute = tm.Minute;
+  home_menu();
+}
 
 
 //Display 84x48 pixels
 //M2_SPACE(el_menu_space, "w1h2");
+
+void fn_button_showhome(m2_el_fnarg_p fnarg) {
+  //Close clock and show top menu
+  home_menu();
+}
 
 /* DISPLAY FOR INFO PAGES */
 M2_INFO(el_labelptr, "w76l5" , &first_visible_line1, &total_lines1, value, fn_button_showhome);
@@ -138,6 +135,7 @@ M2_VLIST(el_top_dt2, NULL, list_dt_buttons);
 M2_ALIGN(el_top_dt, NULL, &el_top_dt2);
 
 
+
 //SET TIMER
 M2_BUTTON(el_dt_ok2, NULL, "OK", fn_button_confirmtimer);
 M2_BUTTON(el_dt_cancel2, NULL, "CANCEL", fn_button_canceltimer);
@@ -145,6 +143,11 @@ M2_LIST(list_dt_buttons2) = { &el_time, &el_dt_ok2, &el_dt_cancel2 };
 M2_VLIST(el_top_dt3, NULL, list_dt_buttons2);
 M2_ALIGN(el_top_settimer, NULL, &el_top_dt3);
 
+
+const char *fn_value(m2_rom_void_p element)
+{
+  return value;
+}
 
 /* DIALOG */
 M2_LABELFN(el_dialog_label, NULL, fn_value);
@@ -159,20 +162,6 @@ M2_VSB(el_vsb_menu, "l3w4" , &first_visible_line1, &total_menu_items);
 M2_LIST(list_menu_strlist) = { &el_strlist_menu, &el_vsb_menu };
 M2_HLIST(el_menu_hlist, NULL, list_menu_strlist);
 
-//Footer at bottom of screen
-M2_LABELFN(el_footer_label, NULL, label_footer);
-M2_LABELFN(el_footer_label2, NULL, label_footer2);
-M2_LABELFN(el_label_clocktext, "b1", label_clocktext);
-
-M2_LIST(list_menu2) = { &el_label_clocktext, &el_menu_hlist, &el_footer_label, &el_footer_label2 };
-M2_VLIST(el_menu_vlist, NULL, list_menu2);
-
-M2_ALIGN(top_buttonmenu, "-0|2", &el_menu_vlist);
-
-//U8
-M2tk m2(&top_buttonmenu, m2_es_arduino_rotary_encoder , m2_eh_4bd, m2_gh_u8g_bf);
-
-
 const char *label_footer(m2_rom_void_p element)
 {
   return textline1;
@@ -181,15 +170,14 @@ const char *label_footer2(m2_rom_void_p element)
 {
   return textline2;
 }
-const char *label_clocktext(m2_rom_void_p element)
-{
-  return clocktext;
-}
+//Footer at bottom of screen
+M2_LABELFN(el_footer_label, NULL, label_footer);
+M2_LABELFN(el_footer_label2, NULL, label_footer2);
 
-const char *fn_value(m2_rom_void_p element)
-{
-  return value;
-}
+
+
+
+
 
 char *copy_string(char *buf, const char* progmemstring)
 {
@@ -197,6 +185,7 @@ char *copy_string(char *buf, const char* progmemstring)
   buf += strlen_P(progmemstring);
   return buf;
 }
+
 
 void build_info_text_basic()
 {
@@ -238,15 +227,20 @@ void build_info_text_basic()
   }
 }
 
-void home_menu() {
-  first_visible_line1 = 0;
-  m2.setRoot(&top_buttonmenu);
+const char *label_clocktext(m2_rom_void_p element)
+{
+  return clocktext;
 }
 
-void fn_button_showhome(m2_el_fnarg_p fnarg) {
-  //Close clock and show top menu
-  home_menu();
-}
+M2_LABELFN(el_label_clocktext, "b1", label_clocktext);
+
+M2_LIST(list_menu2) = { &el_label_clocktext, &el_menu_hlist, &el_footer_label, &el_footer_label2 };
+M2_VLIST(el_menu_vlist, NULL, list_menu2);
+M2_ALIGN(top_buttonmenu, "-0|2", &el_menu_vlist);
+
+//U8
+M2tk m2(&top_buttonmenu, m2_es_arduino_rotary_encoder , m2_eh_4bd, m2_gh_u8g_bf);
+
 
 void fn_faults() {
   clearBuffer();
@@ -392,6 +386,16 @@ unsigned long getTimeFunction() {
   return now();
 }
 
+void home_menu() {
+  first_visible_line1 = 0;
+  m2.setRoot(&top_buttonmenu);
+}
+
+inline void fn_begin_set_date_time() {
+  breakTime(getTimeFunction(), tm);
+  tm.Year = tmYearToY2k(tm.Year);
+  m2.setRoot(&el_top_dt);
+}
 
 void updateClockString() {
   if (timeStatus() != timeNotSet) {
@@ -445,6 +449,25 @@ void updateClockString() {
   }
 }
 
+bool heaterOn() {
+  //WBUS_CMD_ON_PH
+  if (int err = wbus_turnOn(WBUS_CMD_ON_SH, 60) == 0) {
+    heaterMode = WBUS_CMD_ON_SH;
+
+    return true;
+  } else {
+    ShowError(err);
+    return false;
+  }
+}
+
+
+
+inline void fn_begin_set_timer() {
+  tm.Hour = timerHour;
+  tm.Minute = timerMinute;
+  m2.setRoot(&el_top_settimer);
+}
 
 const char *el_strlist_mainmenu(uint8_t idx, uint8_t msg) {
   char *v = value;
@@ -539,55 +562,6 @@ const char *el_strlist_mainmenu(uint8_t idx, uint8_t msg) {
   return value;
 }
 
-bool heaterOn() {
-  //WBUS_CMD_ON_PH
-  if (int err = wbus_turnOn(WBUS_CMD_ON_SH, 60) == 0) {
-    heaterMode = WBUS_CMD_ON_SH;
-
-    return true;
-  } else {
-    ShowError(err);
-    return false;
-  }
-}
-
-inline void fn_begin_set_date_time() {
-  breakTime(getTimeFunction(), tm);
-  tm.Year = tmYearToY2k(tm.Year);
-  m2.setRoot(&el_top_dt);
-}
-
-inline void fn_button_confirmdatetime(m2_el_fnarg_p fnarg) {
-  tm.Year = y2kYearToTm(tm.Year);
-  //Set the DS1307 RTC chip
-  RTC.write(tm);
-  home_menu();
-}
-
-inline void fn_button_canceltimer(m2_el_fnarg_p fnarg) {
-  //Disabled
-  EEPROM.write(0, 0);
-  timerEnabled = 0;
-  home_menu();
-}
-
-inline void fn_button_confirmtimer(m2_el_fnarg_p fnarg) {
-  //Enabled
-  EEPROM.write(0, 255);
-  EEPROM.write(1, tm.Hour);
-  EEPROM.write(2, tm.Minute);
-
-  timerEnabled = 255;
-  timerHour = tm.Hour;
-  timerMinute = tm.Minute;
-  home_menu();
-}
-
-inline void fn_begin_set_timer() {
-  tm.Hour = timerHour;
-  tm.Minute = timerMinute;
-  m2.setRoot(&el_top_settimer);
-}
 
 void keepAlive() {
   //The heater units controller appears to "sleep" after a few seconds of inactivity so keep pestering it to ensure it keeps awake.
@@ -706,6 +680,15 @@ void keepAlive() {
 }
 
 
+void backlightOn() {
+  digitalWrite(lcdBacklight, HIGH);
+}
+
+void backlightOff() {
+  digitalWrite(lcdBacklight, LOW);
+}
+
+
 void loop() {
   keepAlive();
 
@@ -734,14 +717,6 @@ void loop() {
   if (millis() > time_since_key_press) {
     backlightOff();
   }
-}
-
-void backlightOn() {
-  digitalWrite(lcdBacklight, HIGH);
-}
-
-void backlightOff() {
-  digitalWrite(lcdBacklight, LOW);
 }
 
 
@@ -792,4 +767,3 @@ void setup() {
   //  m2.setRoot(&el_bigclock);
   home_menu();
 }
-

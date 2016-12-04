@@ -1,0 +1,28 @@
+
+=== M2TKLIB ===
+http://code.google.com/p/m2tklib/
+
+
+Install instructions for the Arduino environment.
+
+1. Install graphics subsystem if required.
+      a) "lc": LiquidCrystal: Part of Arduino Environment
+      b) "u8g": u8g library, http://code.google.com/p/u8glib/
+      c) "glcd": glcd library, http://code.google.com/p/glcd-arduino/
+      d) "dogm128": dogm128 library, http://code.google.com/p/dogm128/
+      e) "nlc": NewLiquidCrystal: https://bitbucket.org/fmalpartida/new-liquidcrystal/
+2. Unzip m2tklib_arduino_..._X.XX.zip into the "libraries" folder
+3. Start Arduino IDE
+
+=== M2tklib support for SdFat ===
+  Copy "mas_sdfat.cpp" from 
+    addon/mas_sdfat.cpp 
+  to 
+    utility/mas_sdfat.cpp
+    
+=== M2tklib support for SD ===
+  Copy "mas_arduino_sd.cpp" from 
+    addon/mas_arduino_sd.cpp 
+  to 
+    utility/mas_arduino_sd.cpp
+

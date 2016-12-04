@@ -1,0 +1,68 @@
+
+M2tklib ChangeLog
+
+2011-07-04	v1.00	Oliver Kraus <olikraus@gmail.com>
+	* First release
+2011-07-09	v1.01	Oliver Kraus <olikraus@gmail.com>
+	* read-only option
+	* FreqGen Example (GLCD)
+2011-07-15	v1.02	Oliver Kraus <olikraus@gmail.com>
+	* setKey() can be called inside interrupts
+	* setFont() support for GLCD (added two more graphics handler)
+	* Bugfix for KEY_PREV
+	* "." fixpoint option for M2_U32NUM
+2011-09-10	v1.03	Oliver Kraus <olikraus@gmail.com>
+	* New elements: STRLIST, INFO, VSB, SPACE
+	* ChipKIT: All ok
+2012-01-12      v1.04	Oliver Kraus <olikraus@gmail.com>
+	* getKey procedure
+        * Combine menu and graphics example
+        * GLCD: Changed GotoXY to CursorToXY
+        * Ported to Arduino 1.0
+2012-01-28      v1.05	Oliver Kraus <olikraus@gmail.com>
+        * Added LABELFN, U8NUMFN, U32NUMFN
+2012-03-29      v1.06	Oliver Kraus <olikraus@gmail.com>
+        * fixed arduino event-source to support DATA_UP and _DOWN
+2012-04-15      v1.07	Oliver Kraus <olikraus@gmail.com>
+        * M2tk for U8glib
+2012-06-26      v1.08	Oliver Kraus <olikraus@gmail.com>
+	* Fixed char width calculation for numeric u8glib fonts (issue 54)
+	* Fixed bug on the top element calculation for STRLSIT/INFO elements
+	* Extra column for STRLIST element
+	* Added mass storage subsystem (mas)
+	* File-Selection-Box code example (wiki)
+	* Petit Fat File System added to M2tklib
+	* New element: M2_2LMENU
+	* Serial console input and/or output (20x4 LCD simulator)
+	* Fixed bug in M2_COMBO (string buffer return)
+	* PWMPinList example
+2012-07-18      v1.08.1	Oliver Kraus <olikraus@gmail.com>
+	* Bugfix: M2_GFX_MSG_GET_NUM_CHAR_WIDTH was not handled for GLCD 
+2012-11-06      v1.09	Oliver Kraus <olikraus@gmail.com>
+	* Fixed data entry mode for LiquidCrystal (M2_GFX_MSG_DRAW_NORMAL_DATA_ENTRY)
+	* Experimental support for incremental rotary encoder (enhancement issue 71)
+	* New event: XBM_KEY_HOME (ienhancement ssue 75)
+	* Change-Root callback procedure (enhancement issue 76)
+	* Initial focus changeable (enhancement issue 77)
+	* U8glib: XBM-Icons as label or button: M2_XBMLABEL, M2_XBMROOT, M2_XBMBUTTON (enhancement issue 80)
+	* More examples: Bookmarks.pde, RotEnc.pde, XBM.pde (u8glib)
+2013-04-03	v1.10	Oliver Kraus <olikraus@gmail.com>
+	* M2_COMBOPTR (enhancement issue 85)
+	* M2_SPACECB (enhancement issue 86)
+	* M2_X2LMENU (enhancement issue 88)
+	* M2_HIDE (enhancement issue 88)
+	* M2_S8NUM (enhancement issue 96)
+	* M2_BOX (enhancement issue 90)
+	* Support for New LiquidCrystal Library (enhancement issue 98)
+	* Support for Touch Screen (including TSK elements, issue 91)
+	* New examples: MenuX2L, HideS8Num
+2013-11-08	v1.11	Oliver Kraus <olikraus@gmail.com>
+	* Keypad Support for M2_TEXT and M2_U32NUM (Issue 108)
+	* Fixed XBM code (Issues 110, 111)
+	* Touch screen support for M2_STRLIST and M2_VSB (Issue 112)
+	* New color graphics handler for U8glib (Issue 113)
+	* Quick and Home keys (Issues 114 and 115)
+	* Changed default behavioir for M2_ALGIN (Issue 121)
+	* New element: M2_COMBOFN (Issue 122)
+	* New tutorial on event sources (Issues  117 and 123)
+	
